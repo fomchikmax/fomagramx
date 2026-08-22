@@ -143,7 +143,10 @@ data class SdkVariant(
   val maxSdk: Int? = null,
   val flavor: String,
   val displayName: String? = flavor
-)
+) {
+  val isLatest: Boolean
+    get() = flavor == "latest"
+}
 
 object Sdk {
   const val LEGACY = 0

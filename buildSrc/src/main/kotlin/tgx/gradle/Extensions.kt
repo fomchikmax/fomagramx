@@ -13,6 +13,7 @@
 package tgx.gradle
 
 import Sdk
+import SdkVariant
 import com.android.build.api.dsl.BaseFlavor
 import com.android.build.api.dsl.VariantDimension
 import org.gradle.api.Action

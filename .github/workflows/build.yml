@@ -1,0 +1,202 @@
+name: Build FomagramX (Telegram X)
+
+on:
+  workflow_dispatch:
+    inputs:
+      telegram_api_id:
+        description: 'Telegram API ID (число с my.telegram.org; если пусто - берется из Secrets)'
+        required: false
+        default: ''
+        type: string
+      telegram_api_hash:
+        description: 'Telegram API Hash (хэш с my.telegram.org; если пусто - берется из Secrets)'
+        required: false
+        default: ''
+        type: string
+      flavor:
+        description: 'Архитектура сборки (Universal подходит под все Android девайсы)'
+        type: choice
+        options:
+          - 'universal'
+          - 'arm64'
+          - 'arm32'
+          - 'x64'
+          - 'x86'
+          - 'all'
+        default: 'universal'
+      build_type:
+        description: 'Тип сборки (Release или Debug)'
+        type: choice
+        options:
+          - 'release'
+          - 'debug'
+        default: 'release'
+      sign_apk:
+        description: 'Автоматически подписать APK (чтобы сразу ставился на девайс)'
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    name: Build Telegram X APK
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git git-lfs wget sed unzip make clang libncurses5 yasm nasm
+
+      - name: Set up Java 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Set up Android SDK & NDK
+        run: |
+          export ANDROID_SDK_ROOT=$ANDROID_HOME
+          export CMAKE_VERSION=$(bash scripts/read-property.sh version.properties version.cmake)
+          export NDK_VERSION=$(bash scripts/read-property.sh version.properties version.ndk_primary)
+          export BUILD_TOOLS_VERSION=$(bash scripts/read-property.sh version.properties version.build_tools)
+          export COMPILE_SDK_VERSION=$(bash scripts/read-property.sh version.properties version.sdk_compile)
+
+          echo "Installing: Platform $COMPILE_SDK_VERSION, Build-Tools $BUILD_TOOLS_VERSION, NDK $NDK_VERSION, CMake $CMAKE_VERSION"
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install \
+            "platforms;android-$COMPILE_SDK_VERSION" \
+            "build-tools;$BUILD_TOOLS_VERSION" \
+            "ndk;$NDK_VERSION" \
+            "cmake;$CMAKE_VERSION"
+
+          # Fix NDK yasm if missing
+          PREBUILT="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64"
+          if [ -d "$PREBUILT/bin" ] && [ ! -f "$PREBUILT/bin/yasm" ]; then
+            sudo ln -sf $(which yasm) "$PREBUILT/bin/yasm"
+          fi
+
+          # Fix clang folder naming if needed
+          CLANG_DIR=$(ls -d $PREBUILT/lib64/clang/*/lib/linux 2>/dev/null | head -n 1 | xargs -r dirname | xargs -r dirname)
+          if [ -n "$CLANG_DIR" ] && [ ! -d "$PREBUILT/lib64/clang/12.0.9" ]; then
+            sudo ln -sf "$CLANG_DIR" "$PREBUILT/lib64/clang/12.0.9"
+          fi
+
+      - name: Clone and sync all git submodules
+        run: |
+          python3 scripts/sync-submodules.py
+
+      - name: Setup local.properties and Keystore
+        env:
+          INPUT_API_ID: ${{ github.event.inputs.telegram_api_id }}
+          INPUT_API_HASH: ${{ github.event.inputs.telegram_api_hash }}
+          SECRET_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          SECRET_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          SIGN_APK: ${{ github.event.inputs.sign_apk }}
+        run: |
+          API_ID="${INPUT_API_ID:-$SECRET_API_ID}"
+          API_HASH="${INPUT_API_HASH:-$SECRET_API_HASH}"
+
+          if [ -z "$API_ID" ] || [ -z "$API_HASH" ]; then
+            echo "::error::API_ID или API_HASH пустые! Укажи их при запуске воркфлоу или сохрани в Settings -> Secrets (TELEGRAM_API_ID, TELEGRAM_API_HASH)."
+            exit 1
+          fi
+
+          KEYSTORE_FILE=""
+          if [ "$SIGN_APK" = "true" ]; then
+            echo "Generating release keystore..."
+            keytool -genkeypair -v \
+              -keystore "$RUNNER_TEMP/release.jks" \
+              -alias fomagramx \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass "fomagramxpass" \
+              -keypass "fomagramxpass" \
+              -dname "CN=FomagramX, OU=TGX, O=Fomchik, L=Moscow, S=Moscow, C=RU"
+
+            cat <<EOF > "$RUNNER_TEMP/keystore.properties"
+          keystore.file=$RUNNER_TEMP/release.jks
+          keystore.password=fomagramxpass
+          key.alias=fomagramx
+          key.password=fomagramxpass
+          EOF
+            KEYSTORE_FILE="$RUNNER_TEMP/keystore.properties"
+          fi
+
+          cat <<EOF > local.properties
+          sdk.dir=$ANDROID_HOME
+          app.id=org.thunderdog.challegram
+          app.name=Fomagram X
+          app.download_url=https://telegram.org/dlx
+          telegram.api_id=$API_ID
+          telegram.api_hash=$API_HASH
+          EOF
+
+          if [ -n "$KEYSTORE_FILE" ]; then
+            echo "keystore.file=$KEYSTORE_FILE" >> local.properties
+          else
+            echo "app.disable_signing=true" >> local.properties
+          fi
+
+          echo "local.properties successfully created."
+
+      - name: Build native dependencies (libvpx, ffmpeg, opus, androidx-media)
+        run: |
+          chmod +x gradlew scripts/*.sh scripts/private/*.sh
+          export ANDROID_SDK_ROOT=$ANDROID_HOME
+          bash scripts/setup.sh --skip-sdk-setup
+
+      - name: Build APK via Gradle
+        env:
+          FLAVOR: ${{ github.event.inputs.flavor }}
+          BUILD_TYPE: ${{ github.event.inputs.build_type }}
+        run: |
+          BUILD_TYPE_CAP="$(tr '[:lower:]' '[:upper:]' <<< ${BUILD_TYPE:0:1})${BUILD_TYPE:1}"
+
+          case "$FLAVOR" in
+            universal)
+              TASK="assembleUniversal${BUILD_TYPE_CAP}"
+              ;;
+            arm64)
+              TASK="assembleLatestArm64${BUILD_TYPE_CAP}"
+              ;;
+            arm32)
+              TASK="assembleLatestArm32${BUILD_TYPE_CAP}"
+              ;;
+            x64)
+              TASK="assembleLatestX64${BUILD_TYPE_CAP}"
+              ;;
+            x86)
+              TASK="assembleLatestX86${BUILD_TYPE_CAP}"
+              ;;
+            all)
+              TASK="assemble${BUILD_TYPE_CAP}"
+              ;;
+            *)
+              TASK="assembleUniversal${BUILD_TYPE_CAP}"
+              ;;
+          esac
+
+          echo "Building with task: ./gradlew $TASK"
+          ./gradlew $TASK --stacktrace --no-daemon
+
+      - name: Upload APK Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fomagramx-${{ github.event.inputs.flavor }}-${{ github.event.inputs.build_type }}-apks
+          path: |
+            app/build/outputs/apk/**/*.apk
+            app/build/outputs/mapping/**/*.txt
+          retention-days: 14

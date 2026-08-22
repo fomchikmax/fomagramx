@@ -40,6 +40,9 @@ jobs:
   build:
     name: Build Telegram X APK
     runs-on: ubuntu-24.04
+    env:
+      TERM: xterm-256color
+      DEBIAN_FRONTEND: noninteractive
 
     steps:
       - name: Checkout repository
@@ -49,10 +52,9 @@ jobs:
 
       - name: Fix line endings and script permissions
         run: |
-          find scripts -type f -name "*.sh" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
-          find scripts/private -type f -name "*.sh" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
+          find scripts -type f -exec sed -i 's/\r$//' {} + 2>/dev/null || true
           sed -i 's/\r$//' version.properties local.properties.sample gradlew 2>/dev/null || true
-          chmod +x gradlew scripts/*.sh scripts/private/*.sh
+          chmod -R +x scripts gradlew
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -160,8 +162,9 @@ jobs:
 
       - name: Build native dependencies (libvpx, ffmpeg, opus, androidx-media)
         run: |
-          chmod +x gradlew scripts/*.sh scripts/private/*.sh
+          chmod -R +x scripts gradlew
           export ANDROID_SDK_ROOT=$ANDROID_HOME
+          export TERM=xterm-256color
           bash scripts/setup.sh --skip-sdk-setup
 
       - name: Build APK via Gradle

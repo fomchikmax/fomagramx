@@ -21,6 +21,8 @@ import java.io.File
 
 open class ModulePlugin : Plugin<Project> {
   override fun apply(project: Project) {
+    project.pluginManager.apply("org.jetbrains.kotlin.android")
+
     var compileSdkVersion: Int
     var buildToolsVersion: String
     var legacyNdkVersion: String

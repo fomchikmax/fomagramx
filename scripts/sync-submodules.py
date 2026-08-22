@@ -68,9 +68,17 @@ def main():
     print("\n--- Setting up tdlib dependencies ---")
     run_cmd(['git', 'lfs', 'pull'], cwd=tdlib_dir)
 
-    # OpenSSL in tdlib
+    # OpenSSL in tdlib (must be a stable release tag like OpenSSL_1_1_1w so status == 0xf)
     openssl_dir = os.path.join(tdlib_dir, 'source', 'openssl')
-    if not clone_repo('https://github.com/openssl/openssl', openssl_dir, 'OpenSSL_1_1_1-stable'):
+    opensslv_h = os.path.join(openssl_dir, 'include', 'openssl', 'opensslv.h')
+    if os.path.exists(opensslv_h):
+        with open(opensslv_h, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+            if '0x10101180' in content or 'status = 0' in content:
+                print("[INFO] Cleaning non-stable OpenSSL dev branch...")
+                shutil.rmtree(openssl_dir, ignore_errors=True)
+
+    if not clone_repo('https://github.com/openssl/openssl', openssl_dir, 'OpenSSL_1_1_1w'):
         print("[ERROR] Failed to clone OpenSSL for tdlib")
         sys.exit(1)
 
@@ -87,12 +95,10 @@ def main():
         run_cmd(['git', 'submodule', 'update', '--init', '--depth', '1'], cwd=leveldb_dir)
 
     # 4. Verify critical header files
-    opensslv_h = os.path.join(openssl_dir, 'include', 'openssl', 'opensslv.h')
-    td_cmake = os.path.join(td_source_dir, 'CMakeLists.txt')
-
     if not os.path.exists(opensslv_h):
         print(f"[FATAL] Required file missing: {opensslv_h}")
         sys.exit(1)
+    td_cmake = os.path.join(td_source_dir, 'CMakeLists.txt')
     if not os.path.exists(td_cmake):
         print(f"[FATAL] Required file missing: {td_cmake}")
         sys.exit(1)

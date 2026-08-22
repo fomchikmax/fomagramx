@@ -1,6 +1,9 @@
 name: Build FomagramX (Telegram X)
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       telegram_api_id:
@@ -242,8 +245,8 @@ jobs:
 
       - name: Build APK via Gradle
         env:
-          FLAVOR: ${{ github.event.inputs.flavor }}
-          BUILD_TYPE: ${{ github.event.inputs.build_type }}
+          FLAVOR: ${{ github.event.inputs.flavor || 'universal' }}
+          BUILD_TYPE: ${{ github.event.inputs.build_type || 'release' }}
         run: |
           BUILD_TYPE_CAP="$(tr '[:lower:]' '[:upper:]' <<< ${BUILD_TYPE:0:1})${BUILD_TYPE:1}"
 
@@ -278,7 +281,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: fomagramx-${{ github.event.inputs.flavor }}-${{ github.event.inputs.build_type }}-apks
+          name: fomagramx-${{ github.event.inputs.flavor || 'universal' }}-${{ github.event.inputs.build_type || 'release' }}-apks
           path: |
             app/build/outputs/apk/**/*.apk
             app/build/outputs/mapping/**/*.txt

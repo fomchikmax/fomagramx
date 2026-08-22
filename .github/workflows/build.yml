@@ -75,6 +75,17 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
+      - name: Cache Android NDK and SDK Tools
+        id: cache-ndk
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/lib/android/sdk/ndk/23.2.8568313
+            /usr/local/lib/android/sdk/cmake/3.22.1
+            /usr/local/lib/android/sdk/platforms/android-36
+            /usr/local/lib/android/sdk/build-tools/36.0.0
+          key: ndk-sdk-${{ runner.os }}-${{ hashFiles('version.properties') }}
+
       - name: Set up Android SDK & NDK
         run: |
           export ANDROID_SDK_ROOT=$ANDROID_HOME
@@ -83,13 +94,17 @@ jobs:
           export BUILD_TOOLS_VERSION=$(bash scripts/read-property.sh version.properties version.build_tools | tr -d '\r')
           export COMPILE_SDK_VERSION=$(bash scripts/read-property.sh version.properties version.sdk_compile | tr -d '\r')
 
-          echo "Installing: Platform $COMPILE_SDK_VERSION, Build-Tools $BUILD_TOOLS_VERSION, NDK $NDK_VERSION, CMake $CMAKE_VERSION"
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install \
-            "platforms;android-$COMPILE_SDK_VERSION" \
-            "build-tools;$BUILD_TOOLS_VERSION" \
-            "ndk;$NDK_VERSION" \
-            "cmake;$CMAKE_VERSION"
+          if [ ! -d "$ANDROID_HOME/ndk/$NDK_VERSION" ] || [ ! -d "$ANDROID_HOME/cmake/$CMAKE_VERSION" ]; then
+            echo "Installing Android SDK packages: Platform $COMPILE_SDK_VERSION, Build-Tools $BUILD_TOOLS_VERSION, NDK $NDK_VERSION, CMake $CMAKE_VERSION"
+            yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+            $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install \
+              "platforms;android-$COMPILE_SDK_VERSION" \
+              "build-tools;$BUILD_TOOLS_VERSION" \
+              "ndk;$NDK_VERSION" \
+              "cmake;$CMAKE_VERSION"
+          else
+            echo "Android NDK ($NDK_VERSION) and CMake ($CMAKE_VERSION) restored from cache."
+          fi
 
           # Fix NDK yasm if missing
           PREBUILT="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64"
@@ -103,9 +118,31 @@ jobs:
             sudo ln -sf "$CLANG_DIR" "$PREBUILT/lib64/clang/12.0.9"
           fi
 
+      - name: Cache Git Submodules
+        id: cache-submodules
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/jni/third_party
+            tdlib
+            vkryl
+            thirdparty
+          key: submodules-${{ runner.os }}-${{ hashFiles('.gitmodules', 'version.properties') }}
+
       - name: Clone and sync all git submodules
         run: |
           python3 scripts/sync-submodules.py
+
+      - name: Cache Native Compiled Libraries (libvpx, ffmpeg, opus, androidx-media)
+        id: cache-native
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/jni/third_party/libvpx/build
+            app/jni/third_party/ffmpeg/build
+            app/jni/third_party/androidx-media
+            app/jni/third_party/opus
+          key: native-libs-${{ runner.os }}-${{ hashFiles('version.properties', 'scripts/private/**', '.gitmodules') }}
 
       - name: Setup local.properties and Keystore
         env:
@@ -163,6 +200,7 @@ jobs:
           echo "local.properties successfully created."
 
       - name: Build native dependencies (libvpx, ffmpeg, opus, androidx-media)
+        if: steps.cache-native.outputs.cache-hit != 'true'
         run: |
           chmod -R +x scripts gradlew
           export ANDROID_SDK_ROOT=$ANDROID_HOME

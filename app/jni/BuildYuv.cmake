@@ -52,12 +52,26 @@ if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
     "${YUV_DIR}/source/row_neon.cc"
     "${YUV_DIR}/source/scale_neon.cc"
   )
+  set_source_files_properties(
+    "${YUV_DIR}/source/compare_neon.cc"
+    "${YUV_DIR}/source/rotate_neon.cc"
+    "${YUV_DIR}/source/row_neon.cc"
+    "${YUV_DIR}/source/scale_neon.cc"
+    PROPERTIES COMPILE_FLAGS "-mfpu=neon"
+  )
 elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
   list(APPEND YUV_SOURCES
     "${YUV_DIR}/source/compare_neon64.cc"
     "${YUV_DIR}/source/rotate_neon64.cc"
     "${YUV_DIR}/source/row_neon64.cc"
     "${YUV_DIR}/source/scale_neon64.cc"
+  )
+  set_source_files_properties(
+    "${YUV_DIR}/source/compare_neon64.cc"
+    "${YUV_DIR}/source/rotate_neon64.cc"
+    "${YUV_DIR}/source/row_neon64.cc"
+    "${YUV_DIR}/source/scale_neon64.cc"
+    PROPERTIES COMPILE_FLAGS "-march=armv8.2-a+dotprod+i8mm"
   )
 endif()
 
@@ -67,7 +81,6 @@ add_library(yuv STATIC
 
 if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
   target_compile_definitions(yuv PRIVATE LIBYUV_NEON=1)
-  target_compile_options(yuv PRIVATE -mfpu=neon)
 endif()
 
 target_include_directories(yuv PUBLIC

@@ -5,38 +5,92 @@ import shutil
 import subprocess
 import sys
 
+PINNED_COMMITS = {
+    'app/jni/third_party/webp': '991170bbab3e6afc74666d124f3f1dc7be942cd0',
+    'app/jni/third_party/libyuv': 'b56492e2dfc064f65ef27fed9c45d9bbfc2e2ad2',
+    'app/jni/third_party/libtgvoip': '652bfa7745be1a5ac00718fd183c245766efa8f2',
+    'app/jni/third_party/ffmpeg': 'e21e475bdfa77284cf33b48c224ac180741ba81e',
+    'app/jni/third_party/lz4': '8f61d8eb7c6979769a484cde8df61ff7c4c77765',
+    'thirdparty/androidx-media/legacy': 'b930b40a16c06318e43c81771fa2b1024bdb3f29',
+    'thirdparty/androidx-media/lollipop': 'b7bbc6e2bc3e45ff3ed99884c114c50f03bba5c9',
+    'thirdparty/androidx-media/latest': '2bc207851df311340767e913931ca7b28cab1794',
+    'thirdparty/androidx-media/marshmallow': '2bc207851df311340767e913931ca7b28cab1794',
+    'app/jni/third_party/flac': 'e94ff9f68b8e7dbd3e9f8b1ac18a8eca1914f181',
+    'app/jni/third_party/opus': '3da9f7a6db1c05c3996cb363a9d1931a978bf1be',
+    'app/jni/third_party/opusfile': '6dfd29e7adb87f2e193575fc3fa88cbf1a0b27df',
+    'app/jni/third_party/ogg': '06a5e0262cdc28aa4ae6797627a783b5010440f0',
+    'app/jni/third_party/libvpx': '1024874c5919305883187e2953de8fcb4c3d7fa6',
+    'tdlib': 'b34f3bf2067d5f35c03521b4c62f05e9f1678147',
+    'app/jni/third_party/jni-utils': '0a517820b3584d3751c8e233f93952ce14ac3b9b',
+    'vkryl/leveldb': '534c88df2080c8c357d08f18b1ed15e2d2d532c4',
+    'vkryl/core': '6cbbe5d51d4983df0c6068d115b4de56a7829e3c',
+    'app/jni/third_party/rlottie': 'a5fa60c5d866071b7a382e319634d57cbea22f78',
+    'vkryl/td': '748159f1bd3ff9beb94889132cce6033bfe52e09',
+    'vkryl/android': '104b8b953a6033e9d196c84afe2f4ddfc4a82f63',
+    'app/jni/third_party/usrsctp': '01cc4e042e2235b29d9d489d89728a6f9ac063ed',
+    'app/jni/third_party/libsrtp': '860492290f7d1f25e2bd45da6471bfd4cd4d7add',
+    'app/jni/third_party/openh264': 'c59550a2147c255cc8e09451f6deb96de2526b6d',
+    'app/jni/third_party/abseil-cpp': '2f9e432cce407ce0ae50676696666f33a77d42ac',
+    'app/jni/third_party/webrtc': '6ecff4f2446ff7d4ce38ca1c764f023e44dbcb1b',
+    'app/jni/third_party/tgcalls': '332e581d6349c22460090ddf4b0aa19985b63330',
+    'app/jni/third_party/libevent': '422a87cd9cfc916fae4b918d63bf2a3d9bc9c40f',
+    'app/jni/third_party/crc32c': '21fc8ef30415a635e7351ffa0e5d5367943d4a94',
+    'app/jni/third_party/rnnoise': '1cbdbcf1283499bbb2230a6b0f126eb9b236defd',
+    'app/jni/third_party/webrtc_deps/base': 'fd5eca261fa03e22f053a0eaa5b010ca01c6fe51',
+    'app/jni/third_party/webrtc_deps/third_party': '121de111a913373d1ac15e4605da24fd22b21bcf',
+}
+
 def run_cmd(cmd, cwd=None):
     print(f"[EXEC] {' '.join(cmd)}" + (f" (in {cwd})" if cwd else ""))
     res = subprocess.run(cmd, cwd=cwd)
     return res.returncode == 0
 
-def clone_repo(url, target_dir, branch=None):
-    if os.path.exists(target_dir):
-        if os.path.isdir(target_dir) and os.listdir(target_dir):
-            print(f"[SKIP] {target_dir} already exists and is not empty.")
+def fetch_and_checkout(url, target_dir, sha=None, branch=None):
+    norm_target = target_dir.replace('\\', '/')
+    if os.path.exists(target_dir) and os.path.isdir(target_dir):
+        if os.path.exists(os.path.join(target_dir, '.git')):
+            if sha:
+                res = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=target_dir, capture_output=True, text=True)
+                if res.returncode == 0 and res.stdout.strip().startswith(sha[:7]):
+                    print(f"[SKIP] {norm_target} is already at commit {sha[:7]}")
+                    return True
+            elif os.listdir(target_dir):
+                print(f"[SKIP] {norm_target} already exists and is not empty.")
+                return True
+        elif os.listdir(target_dir):
+            print(f"[SKIP] {norm_target} already exists and is not empty.")
             return True
-        else:
-            if os.path.isdir(target_dir):
-                shutil.rmtree(target_dir, ignore_errors=True)
-            else:
-                os.remove(target_dir)
 
-    os.makedirs(os.path.dirname(target_dir), exist_ok=True)
-    cmd = ['git', 'clone', '--depth', '1']
-    if branch:
-        cmd.extend(['-b', branch])
-    cmd.extend([url, target_dir])
+    if os.path.exists(target_dir):
+        shutil.rmtree(target_dir, ignore_errors=True)
+    os.makedirs(target_dir, exist_ok=True)
 
-    if not run_cmd(cmd):
+    if sha:
+        print(f"[FETCH] Fetching {url} @ {sha[:7]} -> {norm_target}")
+        subprocess.run(['git', 'init'], cwd=target_dir)
+        subprocess.run(['git', 'remote', 'add', 'origin', url], cwd=target_dir)
+        res = subprocess.run(['git', 'fetch', '--depth', '1', 'origin', sha], cwd=target_dir)
+        if res.returncode == 0:
+            if subprocess.run(['git', 'checkout', 'FETCH_HEAD'], cwd=target_dir).returncode == 0:
+                return True
+        # Fallback if direct sha fetch is disallowed by remote
+        print(f"[INFO] Direct SHA fetch failed, cloning with depth...")
+        shutil.rmtree(target_dir, ignore_errors=True)
+        os.makedirs(target_dir, exist_ok=True)
+        cmd = ['git', 'clone']
         if branch:
-            print(f"[WARN] Failed with branch '{branch}', retrying default branch...")
-            shutil.rmtree(target_dir, ignore_errors=True)
-            cmd = ['git', 'clone', '--depth', '1', url, target_dir]
-            if not run_cmd(cmd):
-                return False
-        else:
-            return False
-    return True
+            cmd.extend(['-b', branch])
+        cmd.extend([url, target_dir])
+        if subprocess.run(cmd).returncode == 0:
+            if subprocess.run(['git', 'checkout', sha], cwd=target_dir).returncode == 0:
+                return True
+        return False
+    else:
+        cmd = ['git', 'clone', '--depth', '1']
+        if branch:
+            cmd.extend(['-b', branch])
+        cmd.extend([url, target_dir])
+        return subprocess.run(cmd).returncode == 0
 
 def main():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -48,7 +102,7 @@ def main():
     config = configparser.ConfigParser()
     config.read(gitmodules_path)
 
-    # 1. Clone all top-level submodules from .gitmodules
+    # 1. Clone all top-level submodules with exact pinned commits
     for section in config.sections():
         path = config.get(section, 'path', fallback=None)
         url = config.get(section, 'url', fallback=None)
@@ -58,9 +112,12 @@ def main():
             continue
 
         target_dir = os.path.join(root, path)
+        norm_path = path.replace('\\', '/')
+        sha = PINNED_COMMITS.get(norm_path)
+
         print(f"\n--- Processing {path} ---")
-        if not clone_repo(url, target_dir, branch):
-            print(f"[ERROR] Failed to clone {url} to {path}")
+        if not fetch_and_checkout(url, target_dir, sha=sha, branch=branch):
+            print(f"[ERROR] Failed to clone/checkout {url} to {path}")
             sys.exit(1)
 
     # 2. Specific setup for tdlib
@@ -78,13 +135,13 @@ def main():
                 print("[INFO] Cleaning non-stable OpenSSL dev branch...")
                 shutil.rmtree(openssl_dir, ignore_errors=True)
 
-    if not clone_repo('https://github.com/openssl/openssl', openssl_dir, 'OpenSSL_1_1_1w'):
+    if not fetch_and_checkout('https://github.com/openssl/openssl', openssl_dir, branch='OpenSSL_1_1_1w'):
         print("[ERROR] Failed to clone OpenSSL for tdlib")
         sys.exit(1)
 
     # TDLib source in tdlib
     td_source_dir = os.path.join(tdlib_dir, 'source', 'td')
-    if not clone_repo('https://github.com/tdlib/td', td_source_dir, 'master'):
+    if not fetch_and_checkout('https://github.com/tdlib/td', td_source_dir, branch='master'):
         print("[ERROR] Failed to clone td source for tdlib")
         sys.exit(1)
 
@@ -107,3 +164,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

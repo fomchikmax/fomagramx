@@ -78,17 +78,6 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
-      - name: Restore Android NDK and SDK Tools
-        id: restore-ndk
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            /usr/local/lib/android/sdk/ndk/23.2.8568313
-            /usr/local/lib/android/sdk/cmake/3.22.1
-            /usr/local/lib/android/sdk/platforms/android-36
-            /usr/local/lib/android/sdk/build-tools/36.0.0
-          key: ndk-sdk-${{ runner.os }}-${{ hashFiles('version.properties') }}
-
       - name: Set up Android SDK & NDK
         run: |
           export ANDROID_SDK_ROOT=$ANDROID_HOME
@@ -106,7 +95,7 @@ jobs:
               "ndk;$NDK_VERSION" \
               "cmake;$CMAKE_VERSION"
           else
-            echo "Android NDK ($NDK_VERSION) and CMake ($CMAKE_VERSION) restored from cache."
+            echo "Android NDK ($NDK_VERSION) and CMake ($CMAKE_VERSION) are already available."
           fi
 
           # Fix NDK yasm if missing
@@ -120,17 +109,6 @@ jobs:
           if [ -n "$CLANG_DIR" ] && [ ! -d "$PREBUILT/lib64/clang/12.0.9" ]; then
             sudo ln -sf "$CLANG_DIR" "$PREBUILT/lib64/clang/12.0.9"
           fi
-
-      - name: Save Android NDK and SDK Tools to Cache
-        if: steps.restore-ndk.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            /usr/local/lib/android/sdk/ndk/23.2.8568313
-            /usr/local/lib/android/sdk/cmake/3.22.1
-            /usr/local/lib/android/sdk/platforms/android-36
-            /usr/local/lib/android/sdk/build-tools/36.0.0
-          key: ndk-sdk-${{ runner.os }}-${{ hashFiles('version.properties') }}
 
       - name: Restore Git Submodules
         id: restore-submodules

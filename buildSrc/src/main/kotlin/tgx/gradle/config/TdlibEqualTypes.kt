@@ -9,7 +9,6 @@ fun tdlibEqualTypes(): Array<TdlibType> = arrayOf(
   )),
   TdlibType("InternalLinkType", isExperimental = true),
   TdlibType("InviteLinkChatType"),
-  TdlibType("PollType", isExperimental = true),
 
   TdlibType("ProxyType"),
   TdlibType("InlineKeyboardButtonType"),

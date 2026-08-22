@@ -252,7 +252,7 @@ jobs:
 
           case "$FLAVOR" in
             universal)
-              TASK="assembleUniversal${BUILD_TYPE_CAP}"
+              TASK="assembleLatestUniversal${BUILD_TYPE_CAP}"
               ;;
             arm64)
               TASK="assembleLatestArm64${BUILD_TYPE_CAP}"
@@ -270,7 +270,7 @@ jobs:
               TASK="assemble${BUILD_TYPE_CAP}"
               ;;
             *)
-              TASK="assembleUniversal${BUILD_TYPE_CAP}"
+              TASK="assembleLatestUniversal${BUILD_TYPE_CAP}"
               ;;
           esac
 

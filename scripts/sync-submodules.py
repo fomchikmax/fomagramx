@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import configparser
 import os
+import shutil
 import subprocess
 import sys
 
@@ -23,9 +24,15 @@ def main():
             continue
 
         target_dir = os.path.join(root, path)
-        if os.path.exists(target_dir) and os.path.isdir(target_dir) and os.listdir(target_dir):
-            print(f"[SKIP] {path} already exists and is not empty.")
-            continue
+        if os.path.exists(target_dir):
+            if os.path.isdir(target_dir) and os.listdir(target_dir):
+                print(f"[SKIP] {path} already exists and is not empty.")
+                continue
+            else:
+                if os.path.isdir(target_dir):
+                    shutil.rmtree(target_dir, ignore_errors=True)
+                else:
+                    os.remove(target_dir)
 
         os.makedirs(os.path.dirname(target_dir), exist_ok=True)
         print(f"[CLONE] {url} -> {path} (branch: {branch})...")
@@ -36,10 +43,15 @@ def main():
         cmd.extend([url, target_dir])
 
         res = subprocess.run(cmd)
-        if res.returncode != 0 and branch:
-            print(f"[WARN] Failed with branch '{branch}', retrying default branch for {url}...")
-            fallback_cmd = ['git', 'clone', '--depth', '1', '--recursive', url, target_dir]
-            subprocess.run(fallback_cmd, check=True)
+        if res.returncode != 0:
+            if branch:
+                print(f"[WARN] Failed with branch '{branch}', retrying default branch for {url}...")
+                shutil.rmtree(target_dir, ignore_errors=True)
+                fallback_cmd = ['git', 'clone', '--depth', '1', '--recursive', url, target_dir]
+                subprocess.run(fallback_cmd, check=True)
+            else:
+                print(f"[ERROR] Failed to clone {url}")
+                sys.exit(1)
 
     print("All submodules successfully cloned and initialized!")
 

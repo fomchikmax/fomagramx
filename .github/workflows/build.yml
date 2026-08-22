@@ -47,6 +47,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fix line endings and script permissions
+        run: |
+          find scripts -type f -name "*.sh" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
+          find scripts/private -type f -name "*.sh" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
+          sed -i 's/\r$//' version.properties local.properties.sample gradlew 2>/dev/null || true
+          chmod +x gradlew scripts/*.sh scripts/private/*.sh
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -55,7 +62,7 @@ jobs:
       - name: Install system build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git git-lfs wget sed unzip make clang libncurses5 yasm nasm
+          sudo apt-get install -y yasm nasm libncurses6
 
       - name: Set up Java 21 (Temurin)
         uses: actions/setup-java@v4
@@ -67,10 +74,10 @@ jobs:
       - name: Set up Android SDK & NDK
         run: |
           export ANDROID_SDK_ROOT=$ANDROID_HOME
-          export CMAKE_VERSION=$(bash scripts/read-property.sh version.properties version.cmake)
-          export NDK_VERSION=$(bash scripts/read-property.sh version.properties version.ndk_primary)
-          export BUILD_TOOLS_VERSION=$(bash scripts/read-property.sh version.properties version.build_tools)
-          export COMPILE_SDK_VERSION=$(bash scripts/read-property.sh version.properties version.sdk_compile)
+          export CMAKE_VERSION=$(bash scripts/read-property.sh version.properties version.cmake | tr -d '\r')
+          export NDK_VERSION=$(bash scripts/read-property.sh version.properties version.ndk_primary | tr -d '\r')
+          export BUILD_TOOLS_VERSION=$(bash scripts/read-property.sh version.properties version.build_tools | tr -d '\r')
+          export COMPILE_SDK_VERSION=$(bash scripts/read-property.sh version.properties version.sdk_compile | tr -d '\r')
 
           echo "Installing: Platform $COMPILE_SDK_VERSION, Build-Tools $BUILD_TOOLS_VERSION, NDK $NDK_VERSION, CMake $CMAKE_VERSION"
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses

@@ -99,3 +99,20 @@ fun DependencyHandlerScope.flavorImplementation(
     flavorImplementation(sdkVariant.flavor, library, dependencyConfiguration)
   }
 }
+
+fun findExtraFolders(variant: SdkVariant): Set<String> =
+  mutableSetOf<String>().apply {
+    if (variant.minSdk >= 21) {
+      this += "sinceLollipop"
+    }
+    if (variant.minSdk < 23) {
+      this += "preMarshmallow"
+    }
+    if (variant.minSdk >= 23 || variant.isLatest) {
+      this += "sinceMarshmallow"
+    }
+    if (variant.minSdk >= 26 || variant.isLatest) {
+      this += "sinceOreo"
+    }
+    this += "only${variant.flavor.replaceFirstChar { it.uppercase() }}"
+  }.toSet()

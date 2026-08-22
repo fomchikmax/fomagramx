@@ -79,6 +79,11 @@ add_library(yuv STATIC
   ${YUV_SOURCES}
 )
 
+target_compile_definitions(yuv PRIVATE
+  LIBYUV_DISABLE_SVE=1
+  LIBYUV_DISABLE_SME=1
+)
+
 if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
   target_compile_definitions(yuv PRIVATE LIBYUV_NEON=1)
 endif()

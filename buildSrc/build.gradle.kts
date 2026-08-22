@@ -30,6 +30,10 @@ gradlePlugin {
       id = "tgx-module"
       implementationClass = "tgx.gradle.plugin.ModulePlugin"
     }
+    register("java-toolchain-convention") {
+      id = "java-toolchain-convention"
+      implementationClass = "tgx.gradle.plugin.JavaToolchainConventionPlugin"
+    }
   }
 }
 

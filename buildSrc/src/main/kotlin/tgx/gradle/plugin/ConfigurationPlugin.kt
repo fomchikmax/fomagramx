@@ -114,6 +114,7 @@ open class ConfigurationPlugin : Plugin<Project> {
     val appVersionOverride = properties.getProperty("app.version", "0").toInt()
     val applicationVersion = if (appVersionOverride > 0) appVersionOverride else versions.getOrThrow("version.app").toInt()
     val majorVersion = versions.getOrThrow("version.major").toInt()
+    val versionName = properties.getProperty("app.version_name", versions.getProperty("version.name", "${majorVersion}.0"))
 
     val sourceCodeUrl = properties.getProperty("app.sources_url", "")
 
@@ -123,6 +124,7 @@ open class ConfigurationPlugin : Plugin<Project> {
       appExtension,
       sourceCodeUrl,
       applicationVersion,
+      versionName,
       majorVersion,
       isExperimentalBuild,
       isHuaweiBuild,

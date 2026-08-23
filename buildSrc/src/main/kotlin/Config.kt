@@ -58,6 +58,7 @@ data class ApplicationConfig(
   val sourceCodeUrl: String,
 
   val applicationVersion: Int,
+  val versionName: String,
   val majorVersion: Int,
 
   val isExperimentalBuild: Boolean,

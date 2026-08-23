@@ -628,6 +628,10 @@ public class SettingsController extends ViewController<Void> implements
     }
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_fomagram_settings, R.drawable.baseline_settings_24, R.string.FomagramSettings));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_devices, R.drawable.baseline_devices_other_24, R.string.Devices));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
 
@@ -1150,6 +1154,8 @@ public class SettingsController extends ViewController<Void> implements
         }
         return true;
       });
+    } else if (viewId == R.id.btn_fomagram_settings) {
+      navigateTo(new SettingsFomagramController(context, tdlib));
     } else if (viewId == R.id.btn_languageSettings) {
       navigateTo(new SettingsLanguageController(context, tdlib));
     } else if (viewId == R.id.btn_notificationSettings) {

@@ -11,10 +11,10 @@ sdk.dir=
 keystore.file=
 
 ## Package name
-app.id=org.example.tgx
+app.id=org.fomchik.fomagramx
 
 ## Project name
-app.name=TGX Example
+app.name=Fomagram X
 
 ## Link to the app's website. If unavailable, link to the market page could be used.
 app.download_url=https://telegram.org/dlx

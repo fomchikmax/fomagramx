@@ -2,7 +2,7 @@
 <resources>
   <string name="language_continueInLanguage">Continue in English</string>
 
-  <string name="Page1Title">Telegram X</string>
+  <string name="Page1Title">Fomagram X</string>
   <string name="Page2Title">Fast</string>
   <string name="Page3Title">Free</string>
   <string name="Page4Title">Powerful</string>
@@ -30,7 +30,8 @@
   <string name="network_LookupFailed">No routes found, connecting directly…</string>
   <string name="network_LookupFailedProxy">No routes found, using the previous proxy…</string>
 
-  <string name="AppNameAndVersion">Telegram X %1$s</string>
+  <string name="AppNameAndVersion">Fomagram X %1$s</string>
+  <string name="FomagramSettings">Настройки FomagramX</string>
   <string name="language_code">en</string>
   <string name="language_emoji">&#127482;&#127480;</string>
   <string name="language_name">English</string>

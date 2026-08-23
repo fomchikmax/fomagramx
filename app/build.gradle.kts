@@ -229,7 +229,7 @@ android {
     val minorVersion = monthYears(now, then)
 
     versionCode = config.applicationVersion
-    versionName = "${config.majorVersion}.${minorVersion}"
+    versionName = config.versionName
   }
 
   // TODO: needs performance tests. Must be used once custom icon sets will be available
@@ -397,7 +397,7 @@ android {
     }.get().version!!
 
     val versionCodeOverride = versionCode * 1000 + if (!buildType.isDebuggable) (sdk * 100 + abi) else 0
-    val versionNameOverride = StringBuilder("${versionName}.${defaultConfig.versionCode}").apply {
+    val versionNameOverride = StringBuilder(versionName).apply {
       if (extra.has("app_version_suffix")) {
         append(extra["app_version_suffix"])
       }
@@ -422,7 +422,7 @@ android {
 
     buildConfigField("int", "ORIGINAL_VERSION_CODE", versionCode.toString())
     buildConfigField("int", "ABI", abi.toString())
-    buildConfigField("String", "ORIGINAL_VERSION_NAME", "\"${versionName}.${defaultConfig.versionCode}\"")
+    buildConfigField("String", "ORIGINAL_VERSION_NAME", "\"${versionName}\"")
     buildConfigField("String", "RECAPTCHA_VERSION", "\"${recaptchaVersion}\"")
 
     outputs.map { it as ApkVariantOutputImpl }.forEach { output ->

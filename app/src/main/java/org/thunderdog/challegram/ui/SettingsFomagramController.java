@@ -42,7 +42,7 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, "Раздел персональных настроек FomagramX. Здесь будут появляться новые кастомные функции и твики."));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
-    adapter.setItems(items);
+    adapter.setItems(items, false);
     recyclerView.setAdapter(adapter);
   }
 

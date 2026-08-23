@@ -2040,10 +2040,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private String getUsernameData () {
     TdApi.Usernames usernames = tdlib.chatUsernames(chat);
     if (usernames != null && Td.hasUsername(usernames)) {
+      boolean isOtherUser = isUserMode() && user != null && !tdlib.isSelfUserId(user.id);
+      String primary = Td.primaryUsername(usernames);
+      String formatted = FomagramSettings.formatUsername(primary, isOtherUser);
       if (tdlib.isUserChat(chat)) { // Bots + Users: @username
-        return "@" + Td.primaryUsername(usernames);
+        return formatted;
       } else { // Otherwise: /username
-        return "/" + Td.primaryUsername(usernames);
+        return "/" + (formatted.startsWith("@") ? formatted.substring(1) : formatted);
       }
     } else {
       return "";
@@ -2435,6 +2438,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean needPhoneCell () {
+    boolean isOther = user != null && !tdlib.isSelfUserId(user.id);
+    if (FomagramSettings.isHidePhoneView(isOther)) {
+      return false;
+    }
     return user.isContact || user.isMutualContact || TD.hasPhoneNumber(user);
   }
 
@@ -2450,13 +2457,16 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (Td.hasUsername(user)) {
-      final ListItem usernameItem = newUsernameItem();
-      if (usernameItem != null) {
-        if (addedCount > 0) {
-          items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+      boolean isOther = user != null && !tdlib.isSelfUserId(user.id);
+      if (!FomagramSettings.isHideUsernameView(isOther)) {
+        final ListItem usernameItem = newUsernameItem();
+        if (usernameItem != null) {
+          if (addedCount > 0) {
+            items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+          }
+          items.add(usernameItem);
+          addedCount++;
         }
-        items.add(usernameItem);
-        addedCount++;
       }
     }
 

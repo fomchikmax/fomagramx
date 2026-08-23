@@ -570,9 +570,17 @@ public class SettingsController extends ViewController<Void> implements
           } else if (StringUtils.isEmpty(myUsernames.editableUsername)) {
             view.setData(R.string.SetUpUsername);
           } else {
+            String formatted = FomagramSettings.formatUsername(myUsernames.editableUsername, false);
             int collectibleCount = Td.secondaryUsernamesCount(myUsernames);
-            view.setData("@" + myUsernames.editableUsername + (collectibleCount != 0 ? " + " + Lang.pluralBold(R.string.xOtherUsernames, collectibleCount) : "")); // TODO multi-username support
+            view.setData(formatted + (collectibleCount != 0 ? " + " + Lang.pluralBold(R.string.xOtherUsernames, collectibleCount) : ""));
           }
+        } else if (itemId == R.id.btn_toggleNewSetting) {
+          long flag = item.getLongId();
+          boolean val = Settings.instance().getNewSetting(flag);
+          if (item.getBoolValue()) {
+            val = !val;
+          }
+          view.getToggler().setRadioEnabled(val, isUpdate);
         } else if (itemId == R.id.btn_peer_id) {
           view.setData(Strings.buildCounter(tdlib.myUserId(true)));
         } else if (itemId == R.id.btn_phone) {
@@ -603,10 +611,13 @@ public class SettingsController extends ViewController<Void> implements
       items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_peer_id, R.drawable.baseline_identifier_24, R.string.UserId).setContentStrings(R.string.LoadingInformation, R.string.LoadingInformation));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     }
-    items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, R.string.Username).setContentStrings(R.string.LoadingUsername, R.string.SetUpUsername));
-    if (!FomagramSettings.isHidePhoneView()) {
+    if (!FomagramSettings.isHideUsernameView(false)) {
+      items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, R.string.Username).setContentStrings(R.string.LoadingUsername, R.string.SetUpUsername));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    }
+    if (!FomagramSettings.isHidePhoneView(false)) {
       items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_phone, R.drawable.baseline_phone_24, R.string.Phone));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     }
     if (userFull != null && userFull.birthdate != null) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR));
@@ -669,6 +680,8 @@ public class SettingsController extends ViewController<Void> implements
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, R.drawable.baseline_update_24, R.string.CheckForUpdates));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.InstallBetas, Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS)).setLongId(Settings.SETTING_FLAG_DOWNLOAD_BETAS));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sourceCode, R.drawable.baseline_github_24, R.string.ViewSourceCode));
     this.previousBuildInfo = Settings.instance().getPreviousBuildInformation();
@@ -1120,7 +1133,15 @@ public class SettingsController extends ViewController<Void> implements
     } else if (viewId == R.id.btn_devices) {
       navigateTo(new SettingsSessionsController(context, tdlib));
     } else if (viewId == R.id.btn_checkUpdates) {
-      context().appUpdater().checkForUpdates();
+      context().appUpdater().checkForUpdates(true);
+    } else if (viewId == R.id.btn_toggleNewSetting) {
+      ListItem item = (ListItem) v.getTag();
+      long flag = item.getLongId();
+      boolean enabled = adapter.toggleView(v);
+      if (item.getBoolValue()) {
+        enabled = !enabled;
+      }
+      Settings.instance().setNewSetting(flag, enabled);
     } else if (viewId == R.id.btn_subscribeToBeta) {
       tdlib.ui().subscribeToBeta(this);
     } else if (viewId == R.id.btn_sourceCodeChanges) {// TODO provide an ability to view changes in PRs if they are present in both builds

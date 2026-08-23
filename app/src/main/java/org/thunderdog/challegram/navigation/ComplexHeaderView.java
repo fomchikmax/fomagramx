@@ -60,6 +60,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.SimpleMediaViewController;
+import org.thunderdog.challegram.unsorted.FomagramSettings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
@@ -533,8 +534,9 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
   }
 
   private void layoutReceiver () {
+    boolean isIos = (this instanceof org.thunderdog.challegram.component.chat.ChatHeaderView) && FomagramSettings.isIosChatStyle();
     float baseRadius = Screen.dp(getBaseAvatarRadiusDp());
-    float baseCenterX = innerLeftMargin + Screen.dp(4f) + baseRadius;
+    float baseCenterX = isIos ? (getMeasuredWidth() - Screen.dp(24f) - baseRadius) : (innerLeftMargin + Screen.dp(4f) + baseRadius);
     float baseCenterY = currentHeaderOffset + HeaderView.getSize(false) / 2;
 
     float scaleFactor = calculateRealScaleFactor();
@@ -890,17 +892,24 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
         c.restore();
       }
 
-      float baseTextLeft = innerLeftMargin + Screen.dp(4f) + Screen.dp(getBaseAvatarRadiusDp()) * 2 + Screen.dp(9f);
+      boolean isIos = (this instanceof org.thunderdog.challegram.component.chat.ChatHeaderView) && FomagramSettings.isIosChatStyle();
+      float baseTextLeft = isIos && trimmedTitle != null
+        ? Math.max(innerLeftMargin, (viewWidth - trimmedTitle.getWidth() * textScaleFactor) / 2f)
+        : (innerLeftMargin + Screen.dp(4f) + Screen.dp(getBaseAvatarRadiusDp()) * 2 + Screen.dp(9f));
+      float baseSubtitleLeft = isIos && trimmedSubtitle != null
+        ? Math.max(innerLeftMargin, (viewWidth - trimmedSubtitle.getWidth()) / 2f)
+        : baseTextLeft;
       float baseTitleTop = currentHeaderOffset + Screen.dp(7f);
       float baseSubtitleTop = currentHeaderOffset + Screen.dp(30f);
       if (scaleFactor != 0f) {
         baseTextLeft += -Screen.dp(11f) * scaleFactor;
+        baseSubtitleLeft += -Screen.dp(11f) * scaleFactor;
         baseTitleTop += Screen.dp(62f) * scaleFactor;
         baseSubtitleTop += Screen.dp(68f) * scaleFactor;
       }
       if (avatarExpandFactor != 0f) {
         baseTextLeft += (Screen.dp(11f) - baseTextLeft) * avatarExpandFactor;
-
+        baseSubtitleLeft += (Screen.dp(11f) - baseSubtitleLeft) * avatarExpandFactor;
 
         // baseTitleTop += ((calculateHeaderHeight() - Screen.dp(28f) - (trimmedTitleExpanded != null ? trimmedTitleExpanded.getHeight() + trimmedTitleExpanded.getLineHeight(false) : trimmedTitle != null ? trimmedTitle.getHeight() + trimmedTitle.getLineHeight(false) : 0) * avatarTextScale) + (trimmedSubtitleExpanded != null ? trimmedSubtitleExpanded.getHeight() : trimmedTitle != null ? trimmedTitle.getHeight() : 0) - baseTitleTop) * avatarExpandFactor;
         baseTitleTop += ((calculateHeaderHeight() - Screen.dp(28f) - Screen.dp(5f) - getTitleHeight()) - baseTitleTop) * avatarExpandFactor;
@@ -996,11 +1005,11 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
       if (trimmedSubtitle != null) {
         if (trimmedSubtitleExpanded != null && avatarExpandFactor > 0f) {
           if (avatarExpandFactor < 1f) {
-            trimmedSubtitle.draw(c, (int) baseTextLeft, (int) baseSubtitleTop + dy, null, textAlpha * (1f - avatarExpandFactor));
+            trimmedSubtitle.draw(c, (int) baseSubtitleLeft, (int) baseSubtitleTop + dy, null, textAlpha * (1f - avatarExpandFactor));
           }
-          trimmedSubtitleExpanded.draw(c, (int) baseTextLeft, (int) baseSubtitleTop + dy, null, textAlpha * avatarExpandFactor);
+          trimmedSubtitleExpanded.draw(c, (int) baseSubtitleLeft, (int) baseSubtitleTop + dy, null, textAlpha * avatarExpandFactor);
         } else {
-          trimmedSubtitle.draw(c, (int) baseTextLeft, (int) baseSubtitleTop + dy, null, textAlpha);
+          trimmedSubtitle.draw(c, (int) baseSubtitleLeft, (int) baseSubtitleTop + dy, null, textAlpha);
         }
       }
 
@@ -1029,8 +1038,9 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
             statusTextColor = ColorUtils.fromToArgb(this instanceof ChatHeaderView ? Theme.headerTextColor() : ColorUtils.color(0xff, (subtitleColor & 0x00ffffff)), Theme.chatListActionColor(), darkness);
             knownColorId = ColorId.chatListAction;
           }
-          DrawAlgorithms.drawStatus(c, state, baseTextLeft, top + text.getLineHeight() / 2f, ColorUtils.alphaColor(statusVisibility, statusTextColor), this, statusVisibility == 1f ? knownColorId : 0);
-          text.draw(c, (int) baseTextLeft, (int) top, null, statusVisibility);
+          float statusLeft = isIos ? Math.max(innerLeftMargin, (viewWidth - text.getWidth()) / 2f) : baseTextLeft;
+          DrawAlgorithms.drawStatus(c, state, statusLeft, top + text.getLineHeight() / 2f, ColorUtils.alphaColor(statusVisibility, statusTextColor), this, statusVisibility == 1f ? knownColorId : 0);
+          text.draw(c, (int) statusLeft, (int) top, null, statusVisibility);
         }
       }
     } finally {

@@ -32,12 +32,16 @@ import org.thunderdog.challegram.tool.Screen;
 import me.vkryl.core.StringUtils;
 import tgx.td.ChatId;
 
+import org.thunderdog.challegram.unsorted.FomagramSettings;
+
 public class ChatHeaderView extends ComplexHeaderView {
   public interface Callback {
     void onChatHeaderClick ();
+    void onChatAvatarMenuClick ();
   }
 
   private Callback callback;
+  private float touchDownX, touchDownY;
 
   public ChatHeaderView (Context context, Tdlib tdlib, @Nullable ViewController<?> parent) {
     super(context, tdlib, parent);
@@ -87,7 +91,30 @@ public class ChatHeaderView extends ComplexHeaderView {
 
   @Override
   public boolean onTouchEvent (MotionEvent e) {
-    return callback != null && super.onTouchEvent(e);
+    if (callback == null) {
+      return false;
+    }
+    if (FomagramSettings.isIosChatStyle()) {
+      int action = e.getAction();
+      if (action == MotionEvent.ACTION_DOWN) {
+        touchDownX = e.getX();
+        touchDownY = e.getY();
+        return true;
+      } else if (action == MotionEvent.ACTION_UP) {
+        float dx = Math.abs(e.getX() - touchDownX);
+        float dy = Math.abs(e.getY() - touchDownY);
+        if (dx < Screen.dp(20f) && dy < Screen.dp(20f)) {
+          if (getAvatarReceiver().isInsideReceiver(e.getX(), e.getY())) {
+            callback.onChatAvatarMenuClick();
+            return true;
+          } else {
+            callback.onChatHeaderClick();
+            return true;
+          }
+        }
+      }
+    }
+    return super.onTouchEvent(e);
   }
 
   public void setChat (Tdlib tdlib, TdApi.Chat chat, @Nullable ThreadInfo messageThread) {

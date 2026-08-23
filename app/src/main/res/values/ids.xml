@@ -1424,11 +1424,23 @@
   <item type="id" name="btn_fomagram_phone_mask_number" />
   <item type="id" name="btn_fomagram_phone_mask_full" />
   <item type="id" name="btn_fomagram_phone_mask_hide_view" />
+  <item type="id" name="btn_fomagram_phone_fake" />
   <item type="id" name="btn_fomagram_mask_all_phones" />
+
+  <item type="id" name="btn_fomagram_username_mask" />
+  <item type="id" name="btn_fomagram_username_mask_off" />
+  <item type="id" name="btn_fomagram_username_mask_stars" />
+  <item type="id" name="btn_fomagram_username_mask_hide_view" />
+  <item type="id" name="btn_fomagram_username_fake" />
+  <item type="id" name="btn_fomagram_mask_all_usernames" />
+
   <item type="id" name="btn_fomagram_drawer_hide_contacts" />
   <item type="id" name="btn_fomagram_drawer_hide_calls" />
   <item type="id" name="btn_fomagram_drawer_hide_saved_messages" />
   <item type="id" name="btn_fomagram_drawer_hide_invite" />
   <item type="id" name="btn_fomagram_drawer_hide_help" />
   <item type="id" name="btn_fomagram_drawer_hide_night" />
+
+  <item type="id" name="btn_fomagram_chat_ios_style" />
+  <item type="id" name="btn_fomagram_restart" />
 </resources>

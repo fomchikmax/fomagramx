@@ -167,7 +167,14 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     listeners.remove(listener);
   }
 
+  private boolean isManualCheck;
+
   public void checkForUpdates () {
+    checkForUpdates(false);
+  }
+
+  public void checkForUpdates (boolean isManual) {
+    this.isManualCheck = isManual;
     if (state == State.NONE) {
       if (preferTelegramChannelFlow()) {
         checkForTelegramChannelUpdates();
@@ -323,10 +330,6 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       onUpdateUnavailable();
       return;
     }
-    if (BuildConfig.EXPERIMENTAL || (!AppInstallationUtil.allowInAppTelegramUpdates(UI.getAppContext()) && !tdlib.hasUrgentInAppUpdate())) {
-      onUpdateUnavailable();
-      return;
-    }
     tdlib.findUpdateFile(updateFile -> {
       RunnableBool act = updateFileLoadedAndExists -> tdlib.ui().post(() -> {
         if (updateFile != null) {
@@ -439,6 +442,10 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     this.totalBytesToDownload = totalBytesToDownload;
     this.displayVersion = displayVersion;
     this.commit = commit;
+    if (isManualCheck) {
+      isManualCheck = false;
+      UI.showCustomToast("Доступно обновление: " + (!StringUtils.isEmpty(displayVersion) ? displayVersion : "") + "!", Toast.LENGTH_SHORT, 0);
+    }
     if (readyToInstall) {
       setState(State.READY_TO_INSTALL);
     } else {
@@ -528,5 +535,14 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
 
   private void onUpdateUnavailable () {
     setState(State.NONE);
+    if (isManualCheck) {
+      isManualCheck = false;
+      boolean allowBeta = Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS);
+      if (!allowBeta) {
+        UI.showCustomToast("У вас установлена последняя версия. Включите бета-версии, если хотите получать тестовые сборки.", Toast.LENGTH_LONG, 0);
+      } else {
+        UI.showCustomToast("У вас установлена последняя версия (" + BuildConfig.ORIGINAL_VERSION_NAME + ")", Toast.LENGTH_SHORT, 0);
+      }
+    }
   }
 }

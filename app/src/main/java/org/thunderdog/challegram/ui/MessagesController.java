@@ -218,6 +218,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.camera.CameraAccessImageView;
+import org.thunderdog.challegram.unsorted.FomagramSettings;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
@@ -1883,6 +1884,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (inputView != null) {
       inputView.getInlineSearchContext().removeInlineBot(userId);
     }
+  }
+
+  @Override
+  public void onChatAvatarMenuClick () {
+    onMenuItemPressed(R.id.menu_btn_more, null);
   }
 
   @Override
@@ -3580,11 +3586,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else if (id == R.id.menu_chat) {
       HeaderButton btn = header.addButton(menu, R.id.menu_btn_viewScheduled, R.drawable.baseline_date_range_24, getHeaderIconColorId(), this, Screen.dp(52f));
       btn.setVisibility(tdlib.chatHasScheduled(getChatId()) ? View.VISIBLE : View.GONE);
-      header.addMoreButton(menu, this);
+      if (!FomagramSettings.isIosChatStyle()) {
+        header.addMoreButton(menu, this);
+      }
     } else if (id == R.id.menu_secretChat) {
       StopwatchHeaderButton headerButton = header.addStopwatchButton(menu, this);
       headerButton.forceValue(tdlib.ui().getTTLShort(getChatId()), isSecretChat() && tdlib.canChangeMessageAutoDeleteTime(chat.id));
-      header.addMoreButton(menu, this);
+      if (!FomagramSettings.isIosChatStyle()) {
+        header.addMoreButton(menu, this);
+      }
     } else if (id == R.id.menu_messageActions) {
       int iconColorId = getSelectHeaderIconColorId();
       HeaderButton selectInBetweenBtn = header.addButton(menu, R.id.menu_btn_selectInBetween, R.drawable.baseline_toc_24, iconColorId, this, Screen.dp(49f));

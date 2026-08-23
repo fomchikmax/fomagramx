@@ -181,16 +181,24 @@ jobs:
           SIGN_APK="${SIGN_APK:-true}"
           KEYSTORE_FILE=""
           if [ "$SIGN_APK" = "true" ]; then
-            echo "Generating release keystore..."
-            keytool -genkeypair -v \
-              -keystore "$RUNNER_TEMP/release.jks" \
-              -alias fomagramx \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -storepass "fomagramxpass" \
-              -keypass "fomagramxpass" \
-              -dname "CN=FomagramX, OU=TGX, O=Fomchik, L=Moscow, S=Moscow, C=RU"
+            if [ -n "${{ secrets.SIGNING_KEYSTORE }}" ]; then
+              echo "Using keystore from GitHub Secrets..."
+              echo "${{ secrets.SIGNING_KEYSTORE }}" | base64 -d > "$RUNNER_TEMP/release.jks"
+            elif [ -f "fomagramx.jks" ]; then
+              echo "Using fomagramx.jks from repository..."
+              cp "fomagramx.jks" "$RUNNER_TEMP/release.jks"
+            else
+              echo "Generating release keystore..."
+              keytool -genkeypair -v \
+                -keystore "$RUNNER_TEMP/release.jks" \
+                -alias fomagramx \
+                -keyalg RSA \
+                -keysize 2048 \
+                -validity 10000 \
+                -storepass "fomagramxpass" \
+                -keypass "fomagramxpass" \
+                -dname "CN=FomagramX, OU=TGX, O=Fomchik, L=Moscow, S=Moscow, C=RU"
+            fi
 
             printf "keystore.file=%s\nkeystore.password=fomagramxpass\nkey.alias=fomagramx\nkey.password=fomagramxpass\n" "$RUNNER_TEMP/release.jks" > "$RUNNER_TEMP/keystore.properties"
             KEYSTORE_FILE="$RUNNER_TEMP/keystore.properties"

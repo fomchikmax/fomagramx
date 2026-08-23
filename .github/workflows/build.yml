@@ -178,6 +178,7 @@ jobs:
             exit 1
           fi
 
+          SIGN_APK="${SIGN_APK:-true}"
           KEYSTORE_FILE=""
           if [ "$SIGN_APK" = "true" ]; then
             echo "Generating release keystore..."
@@ -192,11 +193,11 @@ jobs:
               -dname "CN=FomagramX, OU=TGX, O=Fomchik, L=Moscow, S=Moscow, C=RU"
 
             cat <<EOF > "$RUNNER_TEMP/keystore.properties"
-          keystore.file=$RUNNER_TEMP/release.jks
-          keystore.password=fomagramxpass
-          key.alias=fomagramx
-          key.password=fomagramxpass
-          EOF
+keystore.file=$RUNNER_TEMP/release.jks
+keystore.password=fomagramxpass
+key.alias=fomagramx
+key.password=fomagramxpass
+EOF
             KEYSTORE_FILE="$RUNNER_TEMP/keystore.properties"
           fi
 
@@ -269,6 +270,22 @@ jobs:
 
           echo "Building with task: ./gradlew $TASK"
           ./gradlew $TASK --stacktrace --no-daemon
+
+      - name: Verify and Sign APKs
+        run: |
+          BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
+          APKSIGNER="$BUILD_TOOLS_DIR/apksigner"
+          echo "Using apksigner: $APKSIGNER"
+          
+          for apk in $(find app/build/outputs/apk -name "*.apk" -type f); do
+            echo "Checking APK: $apk"
+            if ! $APKSIGNER verify "$apk" 2>/dev/null; then
+              echo "APK $apk is not signed or verification failed! Signing with apksigner..."
+              $APKSIGNER sign --ks "$RUNNER_TEMP/release.jks" --ks-pass pass:fomagramxpass --key-pass pass:fomagramxpass --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true "$apk"
+            fi
+            echo "Signature verification for $apk:"
+            $APKSIGNER verify -v "$apk" || true
+          done
 
       - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4

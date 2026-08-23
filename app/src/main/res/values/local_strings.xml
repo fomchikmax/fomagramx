@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <!-- DO NOT SYNC WITH TRANSLATIONS PLATFORM -->
-  <string name="AppNameAndVersion">Fomagram X %1$s</string>
-  <string name="FomagramSettings">Настройки FomagramX</string>
   <string name="UseExplicitDice">Use explicit dice</string>
   <string name="suggested_language_code" />
   <string name="suggested_language_code_base" />

@@ -192,23 +192,11 @@ jobs:
               -keypass "fomagramxpass" \
               -dname "CN=FomagramX, OU=TGX, O=Fomchik, L=Moscow, S=Moscow, C=RU"
 
-            cat <<EOF > "$RUNNER_TEMP/keystore.properties"
-keystore.file=$RUNNER_TEMP/release.jks
-keystore.password=fomagramxpass
-key.alias=fomagramx
-key.password=fomagramxpass
-EOF
+            printf "keystore.file=%s\nkeystore.password=fomagramxpass\nkey.alias=fomagramx\nkey.password=fomagramxpass\n" "$RUNNER_TEMP/release.jks" > "$RUNNER_TEMP/keystore.properties"
             KEYSTORE_FILE="$RUNNER_TEMP/keystore.properties"
           fi
 
-          cat <<EOF > local.properties
-          sdk.dir=$ANDROID_HOME
-          app.id=org.thunderdog.challegram
-          app.name=Fomagram X
-          app.download_url=https://telegram.org/dlx
-          telegram.api_id=$API_ID
-          telegram.api_hash=$API_HASH
-          EOF
+          printf "sdk.dir=%s\napp.id=org.thunderdog.challegram\napp.name=Fomagram X\napp.download_url=https://telegram.org/dlx\ntelegram.api_id=%s\ntelegram.api_hash=%s\n" "$ANDROID_HOME" "$API_ID" "$API_HASH" > local.properties
 
           if [ -n "$KEYSTORE_FILE" ]; then
             echo "keystore.file=$KEYSTORE_FILE" >> local.properties
@@ -271,12 +259,13 @@ EOF
           echo "Building with task: ./gradlew $TASK"
           ./gradlew $TASK --stacktrace --no-daemon
 
-      - name: Verify and Sign APKs
+      - name: Verify, Sign and Prepare APKs
         run: |
           BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
           APKSIGNER="$BUILD_TOOLS_DIR/apksigner"
           echo "Using apksigner: $APKSIGNER"
           
+          mkdir -p dist
           for apk in $(find app/build/outputs/apk -name "*.apk" -type f); do
             echo "Checking APK: $apk"
             if ! $APKSIGNER verify "$apk" 2>/dev/null; then
@@ -285,6 +274,10 @@ EOF
             fi
             echo "Signature verification for $apk:"
             $APKSIGNER verify -v "$apk" || true
+
+            BASE_NAME=$(basename "$apk")
+            cp "$apk" "dist/${BASE_NAME}"
+            echo "Copied $apk -> dist/${BASE_NAME}"
           done
 
       - name: Upload APK Artifacts
@@ -292,7 +285,5 @@ EOF
         if: always()
         with:
           name: fomagramx-${{ github.event.inputs.flavor || 'universal' }}-${{ github.event.inputs.build_type || 'release' }}-apks
-          path: |
-            app/build/outputs/apk/**/*.apk
-            app/build/outputs/mapping/**/*.txt
+          path: dist/*.apk
           retention-days: 14

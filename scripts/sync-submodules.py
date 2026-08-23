@@ -151,7 +151,18 @@ def main():
         print("\n--- Initializing vkryl/leveldb submodules ---")
         run_cmd(['git', 'submodule', 'update', '--init', '--depth', '1'], cwd=leveldb_dir)
 
-    # 4. Verify critical header files
+    # 4. Patch vkryl/android CINNAMON_BUN if needed
+    sdk_version_file = os.path.join(root, 'vkryl', 'android', 'src', 'main', 'kotlin', 'me', 'vkryl', 'android', 'SdkVersion.kt')
+    if os.path.exists(sdk_version_file):
+        with open(sdk_version_file, 'r', encoding='utf-8') as f:
+            sdk_content = f.read()
+        if 'Build.VERSION_CODES.CINNAMON_BUN' in sdk_content:
+            print("[INFO] Patching CINNAMON_BUN in vkryl/android SdkVersion.kt...")
+            sdk_content = sdk_content.replace('Build.VERSION_CODES.CINNAMON_BUN', '37')
+            with open(sdk_version_file, 'w', encoding='utf-8') as f:
+                f.write(sdk_content)
+
+    # 5. Verify critical header files
     if not os.path.exists(opensslv_h):
         print(f"[FATAL] Required file missing: {opensslv_h}")
         sys.exit(1)

@@ -28,17 +28,17 @@ open class ValidateApiTokensTask : BaseTask() {
     val json = File("app/google-services.json").readText()
     val googleServices = Json.parseToJsonElement(json)
     var foundPackageName: String? = null
-    googleServices.jsonObject["client"]!!.jsonArray.filter {
-      // client_info.android_client_info.package_name
+    val matches = googleServices.jsonObject["client"]!!.jsonArray.filter {
       val clientInfo = it.jsonObject["client_info"]!!.jsonObject
       val googleAppId = clientInfo["mobilesdk_app_id"]!!.jsonPrimitive.content
       val clientInfoPackage = clientInfo["android_client_info"]!!.jsonObject["package_name"]!!.jsonPrimitive.content
       foundPackageName = clientInfoPackage
       clientInfoPackage == appId && (googleAppId != "1:1037154859800:android:683d617a5fe76437" || clientInfoPackage == "org.thunderdog.challegram")
-    }.ifEmpty {
-      error(
-        "google_services.json is not updated for $appId package. Found: $foundPackageName. " +
-        "Notifications in the app won't work without properly updating it."
+    }
+    if (matches.isEmpty()) {
+      project.logger.warn(
+        "WARNING: google_services.json is not updated for $appId package. Found: $foundPackageName. " +
+        "Notifications in the app won't work without properly updating it with your own Firebase project."
       )
     }
   }

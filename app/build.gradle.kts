@@ -418,7 +418,7 @@ android {
       }
     }.toString()
 
-    val fileName = "${config.outputFileNamePrefix}-${versionNameOverride.replace(Regex("-universal(?=-|$)"), "")}"
+    val fileName = "${config.outputFileNamePrefix}-${versionNameOverride}"
 
     buildConfigField("int", "ORIGINAL_VERSION_CODE", versionCode.toString())
     buildConfigField("int", "ABI", abi.toString())

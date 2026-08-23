@@ -26,7 +26,7 @@ on:
           - 'x64'
           - 'x86'
           - 'all'
-        default: 'universal'
+        default: 'arm64'
       build_type:
         description: 'Тип сборки (Release или Debug)'
         type: choice
@@ -235,7 +235,7 @@ jobs:
 
       - name: Build APK via Gradle
         env:
-          FLAVOR: ${{ github.event.inputs.flavor || 'universal' }}
+          FLAVOR: ${{ github.event.inputs.flavor || 'arm64' }}
           BUILD_TYPE: ${{ github.event.inputs.build_type || 'release' }}
         run: |
           BUILD_TYPE_CAP="$(tr '[:lower:]' '[:upper:]' <<< ${BUILD_TYPE:0:1})${BUILD_TYPE:1}"

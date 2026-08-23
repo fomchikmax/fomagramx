@@ -39,7 +39,7 @@ public final class FeatureAvailability {
    */
   @Retention(RetentionPolicy.SOURCE)
   public @interface ReleaseVersionCode {
-    int CHAT_FOLDERS = 1725;
+    int CHAT_FOLDERS = 1;
   }
 
   /**
@@ -48,7 +48,7 @@ public final class FeatureAvailability {
   @Retention(RetentionPolicy.SOURCE)
   @SuppressWarnings("ConstantConditions")
   public @interface Released {
-    boolean CHAT_FOLDERS = BuildConfig.ORIGINAL_VERSION_CODE >= ReleaseVersionCode.CHAT_FOLDERS;
+    boolean CHAT_FOLDERS = true;
   }
 
   public static long recoverAvailableFeaturesForAppVersionCode (int versionCode) {

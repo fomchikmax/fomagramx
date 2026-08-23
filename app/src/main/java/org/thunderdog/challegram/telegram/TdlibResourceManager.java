@@ -79,6 +79,10 @@ public class TdlibResourceManager {
   }
 
   public void findResource (RunnableData<TdApi.Message> onDone, String query, long afterDateMs) {
+    findMatchingResource(onDone, query, afterDateMs, null);
+  }
+
+  public void findMatchingResource (RunnableData<TdApi.Message> onDone, String query, long afterDateMs, Filter<TdApi.Message> filter) {
     withChat(chatId -> {
       if (chatId == 0) {
         onDone.runWithData(null);
@@ -86,13 +90,18 @@ public class TdlibResourceManager {
       }
       tdlib.incrementJobReferenceCount();
       tdlib.openChat(chatId, null, () -> {
-        tdlib.send(new TdApi.SearchChatMessages(chatId, null, query, null, 0, 0, 1, new TdApi.SearchMessagesFilterDocument()), (messages, error) -> {
+        tdlib.send(new TdApi.SearchChatMessages(chatId, null, query, null, 0, 0, 10, new TdApi.SearchMessagesFilterDocument()), (messages, error) -> {
           if (messages != null) {
-            if (messages.messages.length > 0 && TimeUnit.SECONDS.toMillis(messages.messages[0].date) > afterDateMs) {
-              onDone.runWithData(messages.messages[0]);
-            } else {
-              onDone.runWithData(null);
+            TdApi.Message matched = null;
+            for (TdApi.Message msg : messages.messages) {
+              if (TimeUnit.SECONDS.toMillis(msg.date) > afterDateMs) {
+                if (filter == null || filter.accept(msg)) {
+                  matched = msg;
+                  break;
+                }
+              }
             }
+            onDone.runWithData(matched);
           } else {
             Log.e("Unable to fetch resource in @%s: %s", channelUsername, TD.toErrorString(error));
             onDone.runWithData(null);

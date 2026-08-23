@@ -10660,16 +10660,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       onDone.runWithData(null);
       return;
     }
-    final String hashtag;
-    if (!BuildConfig.LATEST_FLAVOR) {
-      hashtag = abiFlavor + StringUtils.ucfirst(BuildConfig.FLAVOR_SDK);
-    } else {
-      hashtag = abiFlavor;
-    }
-    final String query = "#apk " +
-      (Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS) ? "" : "#stable ") +
-      "#" + hashtag;
-    clientHolder().updates.findResource(message -> {
+    final String query = "#apk";
+    clientHolder().updates.findMatchingResource(message -> {
       if (message != null && Td.isDocument(message.content)) {
         TdApi.Document document = ((TdApi.MessageDocument) message.content).document;
         TdApi.FormattedText caption = ((TdApi.MessageDocument) message.content).caption;
@@ -10677,11 +10669,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         int buildNo = 0;
         String version = null;
         String commit = null;
-        final String prefix = "Telegram-X-";
-        if (!StringUtils.isEmpty(document.fileName) && document.fileName.startsWith(prefix)) {
-          int i = document.fileName.indexOf('-', prefix.length());
-          version = document.fileName.substring(prefix.length(), i == -1 ? document.fileName.length() : i);
-          if (version.matches("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$")) {
+        String fileName = document.fileName != null ? document.fileName : "";
+        String prefix = fileName.startsWith("Fomagram-X-") ? "Fomagram-X-" : (fileName.startsWith("Telegram-X-") ? "Telegram-X-" : null);
+        if (prefix != null) {
+          int i = fileName.indexOf('-', prefix.length());
+          version = fileName.substring(prefix.length(), i == -1 ? (fileName.endsWith(".apk") ? fileName.length() - 4 : fileName.length()) : i);
+          if (version.matches("^[0-9]+(\\.[0-9]+)+$")) {
+            buildNo = StringUtils.parseInt(version.substring(version.lastIndexOf('.') + 1));
+            if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE) {
+              ok = true;
+            }
+          }
+        }
+        if (!ok && caption != null && !StringUtils.isEmpty(caption.text)) {
+          Pattern vPattern = Pattern.compile("(?i)Version:\\s*`?([0-9]+(?:\\.[0-9]+)+)", Pattern.CASE_INSENSITIVE);
+          Matcher vMatcher = vPattern.matcher(caption.text);
+          if (vMatcher.find()) {
+            version = vMatcher.group(1);
             buildNo = StringUtils.parseInt(version.substring(version.lastIndexOf('.') + 1));
             if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE) {
               ok = true;
@@ -10700,8 +10704,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           }
         }
         onDone.runWithData(ok ? new UpdateFileInfo(document, buildNo, version, commit) : null);
+      } else {
+        onDone.runWithData(null);
       }
-    }, query, BuildConfig.COMMIT_DATE);
+    }, query, BuildConfig.COMMIT_DATE, msg -> {
+      if (!Td.isDocument(msg.content)) return false;
+      TdApi.Document doc = ((TdApi.MessageDocument) msg.content).document;
+      TdApi.FormattedText cap = ((TdApi.MessageDocument) msg.content).caption;
+      String fn = doc.fileName != null ? doc.fileName.toLowerCase() : "";
+      String ct = cap != null && cap.text != null ? cap.text.toLowerCase() : "";
+      
+      boolean isUniversal = fn.contains("universal") || ct.contains("#universal");
+      boolean isArm64 = fn.contains("arm64") || ct.contains("#arm64");
+      boolean isArm32 = fn.contains("arm32") || fn.contains("arm7") || fn.contains("armeabi") || ct.contains("#arm32") || ct.contains("#arm7");
+      
+      if ("arm64".equals(abiFlavor)) {
+        return isArm64 || isUniversal;
+      } else if ("arm32".equals(abiFlavor)) {
+        return isArm32 || isUniversal;
+      }
+      return isUniversal || fn.contains(abiFlavor) || ct.contains("#" + abiFlavor);
+    });
   }
 
   public <T extends Settings.CloudSetting> void fetchCloudSettings (@NonNull RunnableData<List<T>> callback, String requiredHashtag, @NonNull Future<T> currentSettingProvider, @NonNull Future<T> builtinItemProvider, @NonNull WrapperProvider<T, TdApi.Message> instanceProvider) {

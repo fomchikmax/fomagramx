@@ -10717,7 +10717,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       boolean isUniversal = fn.contains("universal") || ct.contains("#universal");
       boolean isArm64 = fn.contains("arm64") || ct.contains("#arm64");
       boolean isArm32 = fn.contains("arm32") || fn.contains("arm7") || fn.contains("armeabi") || ct.contains("#arm32") || ct.contains("#arm7");
-      
+
+      boolean isBeta = ct.contains("#beta");
+      boolean allowBeta = Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS);
+      if (isBeta && !allowBeta) {
+        return false;
+      }
+
       if ("arm64".equals(abiFlavor)) {
         return isArm64 || isUniversal;
       } else if ("arm32".equals(abiFlavor)) {

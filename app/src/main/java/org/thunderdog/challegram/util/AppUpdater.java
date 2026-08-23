@@ -180,10 +180,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
   }
 
   private boolean preferTelegramChannelFlow () {
-    // TODO: add server config to force
-    return googlePlayUpdateManager == null ||
-      forceTelegramChannelFlow ||
-      (googlePlayFlowError && AppInstallationUtil.isAppSideLoaded(UI.getAppContext()));
+    return true;
   }
 
   public static AppInstallationUtil.PublicMarketUrls publicMarketUrls () {

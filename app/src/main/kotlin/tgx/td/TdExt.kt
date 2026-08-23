@@ -153,7 +153,7 @@ fun LinkPreview?.getRepresentationTitle (): String {
         null
       }
       else -> {
-        assertLinkPreviewType_883de866()
+        assertLinkPreviewType_a9a3ffcd()
         throw unsupported(it)
       }
     }
@@ -175,7 +175,7 @@ fun LinkPreview?.getContentTitle (): String {
             it.audio?.title
           }
           else -> {
-            assertLinkPreviewType_883de866()
+            assertLinkPreviewType_a9a3ffcd()
             null
           }
         }
@@ -292,7 +292,7 @@ fun LinkPreviewType?.getMediaFile (): File? {
     LinkPreviewTypeLiveStory.CONSTRUCTOR,
     LinkPreviewTypeUnsupported.CONSTRUCTOR -> null
     else -> {
-      assertLinkPreviewType_883de866()
+      assertLinkPreviewType_a9a3ffcd()
       throw unsupported(this)
     }
   }

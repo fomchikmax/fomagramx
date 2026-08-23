@@ -6,38 +6,37 @@ import subprocess
 import sys
 
 PINNED_COMMITS = {
-    'app/jni/third_party/webp': '991170bbab3e6afc74666d124f3f1dc7be942cd0',
-    'app/jni/third_party/libyuv': 'b56492e2dfc064f65ef27fed9c45d9bbfc2e2ad2',
-    'app/jni/third_party/libtgvoip': '652bfa7745be1a5ac00718fd183c245766efa8f2',
-    'app/jni/third_party/ffmpeg': 'e21e475bdfa77284cf33b48c224ac180741ba81e',
-    'app/jni/third_party/lz4': '8f61d8eb7c6979769a484cde8df61ff7c4c77765',
-    'thirdparty/androidx-media/legacy': 'b930b40a16c06318e43c81771fa2b1024bdb3f29',
-    'thirdparty/androidx-media/lollipop': 'b7bbc6e2bc3e45ff3ed99884c114c50f03bba5c9',
-    'thirdparty/androidx-media/latest': '2bc207851df311340767e913931ca7b28cab1794',
-    'thirdparty/androidx-media/marshmallow': '2bc207851df311340767e913931ca7b28cab1794',
-    'app/jni/third_party/flac': 'e94ff9f68b8e7dbd3e9f8b1ac18a8eca1914f181',
-    'app/jni/third_party/opus': '3da9f7a6db1c05c3996cb363a9d1931a978bf1be',
-    'app/jni/third_party/opusfile': '6dfd29e7adb87f2e193575fc3fa88cbf1a0b27df',
-    'app/jni/third_party/ogg': '06a5e0262cdc28aa4ae6797627a783b5010440f0',
-    'app/jni/third_party/libvpx': '1024874c5919305883187e2953de8fcb4c3d7fa6',
-    'tdlib': 'b34f3bf2067d5f35c03521b4c62f05e9f1678147',
-    'app/jni/third_party/jni-utils': '0a517820b3584d3751c8e233f93952ce14ac3b9b',
-    'vkryl/leveldb': '534c88df2080c8c357d08f18b1ed15e2d2d532c4',
-    'vkryl/core': '6cbbe5d51d4983df0c6068d115b4de56a7829e3c',
-    'app/jni/third_party/rlottie': 'a5fa60c5d866071b7a382e319634d57cbea22f78',
-    'vkryl/td': '748159f1bd3ff9beb94889132cce6033bfe52e09',
-    'vkryl/android': '104b8b953a6033e9d196c84afe2f4ddfc4a82f63',
-    'app/jni/third_party/usrsctp': '01cc4e042e2235b29d9d489d89728a6f9ac063ed',
-    'app/jni/third_party/libsrtp': '860492290f7d1f25e2bd45da6471bfd4cd4d7add',
-    'app/jni/third_party/openh264': 'c59550a2147c255cc8e09451f6deb96de2526b6d',
     'app/jni/third_party/abseil-cpp': '2f9e432cce407ce0ae50676696666f33a77d42ac',
-    'app/jni/third_party/webrtc': '6ecff4f2446ff7d4ce38ca1c764f023e44dbcb1b',
-    'app/jni/third_party/tgcalls': '332e581d6349c22460090ddf4b0aa19985b63330',
-    'app/jni/third_party/libevent': '422a87cd9cfc916fae4b918d63bf2a3d9bc9c40f',
     'app/jni/third_party/crc32c': '21fc8ef30415a635e7351ffa0e5d5367943d4a94',
+    'app/jni/third_party/ffmpeg': 'e36046790a141c46de767e3c93b692e4c3b1c3de',
+    'app/jni/third_party/flac': '1507800de4b70e21be71f38caa0d9079d0bc6e45',
+    'app/jni/third_party/jni-utils': '0a517820b3584d3751c8e233f93952ce14ac3b9b',
+    'app/jni/third_party/libevent': '422a87cd9cfc916fae4b918d63bf2a3d9bc9c40f',
+    'app/jni/third_party/libsrtp': '860492290f7d1f25e2bd45da6471bfd4cd4d7add',
+    'app/jni/third_party/libtgvoip': '652bfa7745be1a5ac00718fd183c245766efa8f2',
+    'app/jni/third_party/libvpx': 'd168454ecd099805c675d4a98c66f4891373302a',
+    'app/jni/third_party/libyuv': '4e8a843bfc6bc967eed60b9c0eab078f42bdd6e0',
+    'app/jni/third_party/lz4': '8f61d8eb7c6979769a484cde8df61ff7c4c77765',
+    'app/jni/third_party/ogg': 'be05b13e98b048f0b5a0f5fa8ce514d56db5f822',
+    'app/jni/third_party/openh264': 'c59550a2147c255cc8e09451f6deb96de2526b6d',
+    'app/jni/third_party/opus': 'ddbe48383984d56acd9e1ab6a090c54ca6b735a6',
+    'app/jni/third_party/opusfile': 'a55c164e9891a9326188b7d4d216ec9a88373739',
+    'app/jni/third_party/rlottie': 'a5fa60c5d866071b7a382e319634d57cbea22f78',
     'app/jni/third_party/rnnoise': '1cbdbcf1283499bbb2230a6b0f126eb9b236defd',
+    'app/jni/third_party/tgcalls': '8e27a9213a536600e3958a46e994903dd875b77d',
+    'app/jni/third_party/usrsctp': '01cc4e042e2235b29d9d489d89728a6f9ac063ed',
+    'app/jni/third_party/webp': '991170bbab3e6afc74666d124f3f1dc7be942cd0',
+    'app/jni/third_party/webrtc': '6ecff4f2446ff7d4ce38ca1c764f023e44dbcb1b',
     'app/jni/third_party/webrtc_deps/base': 'fd5eca261fa03e22f053a0eaa5b010ca01c6fe51',
     'app/jni/third_party/webrtc_deps/third_party': '121de111a913373d1ac15e4605da24fd22b21bcf',
+    'tdlib': 'ed3e4bac11f60ebacf205cf5dabe6488b9cda0e6',
+    'thirdparty/androidx-media/latest': '7cc1056f840ce226598d3b990d4a6f7cd17e2831',
+    'thirdparty/androidx-media/legacy': 'c35a9d62baec57118ea898e271ac66819399649b',
+    'thirdparty/androidx-media/lollipop': 'b7bbc6e2bc3e45ff3ed99884c114c50f03bba5c9',
+    'vkryl/android': 'a35c640da581081414b3f792177b0ea793f3387f',
+    'vkryl/core': 'e85f95bff6160e50bda31112c48eeec61f1087b1',
+    'vkryl/leveldb': '159ba70919aa7f1ec3ed1ab64064355930bda9cc',
+    'vkryl/td': '6a26e9b3274bbabc89c656709aa8e3ca3f9bbb5d',
 }
 
 def run_cmd(cmd, cwd=None):
@@ -141,7 +140,7 @@ def main():
 
     # TDLib source in tdlib
     td_source_dir = os.path.join(tdlib_dir, 'source', 'td')
-    if not fetch_and_checkout('https://github.com/tdlib/td', td_source_dir, branch='master'):
+    if not fetch_and_checkout('https://github.com/tdlib/td', td_source_dir, sha='0da5c72f8365fb4857096e716d53175ddbdf5a15'):
         print("[ERROR] Failed to clone td source for tdlib")
         sys.exit(1)
 

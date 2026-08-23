@@ -6,6 +6,7 @@ package org.thunderdog.challegram.ui;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.text.InputFilter;
 import android.text.InputType;
 import android.text.TextUtils;
@@ -22,7 +23,6 @@ import android.widget.Toast;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.navigation.FrameLayoutFix;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.android.ViewUtils;
+import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 
 public class SettingsFomagramController extends RecyclerViewController<Void> implements View.OnClickListener {
@@ -153,11 +154,15 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
     restartBanner.setOrientation(LinearLayout.HORIZONTAL);
     restartBanner.setGravity(Gravity.CENTER_VERTICAL);
     restartBanner.setPadding(Screen.dp(16f), Screen.dp(10f), Screen.dp(16f), Screen.dp(10f));
-    restartBanner.setBackground(Theme.fillingCard(Theme.getColor(ColorId.chatBackground)));
+
+    GradientDrawable bg = new GradientDrawable();
+    bg.setColor(Theme.getColor(ColorId.headerBackground));
+    bg.setCornerRadius(Screen.dp(12f));
+    restartBanner.setBackground(bg);
 
     TextView tvText = new TextView(context);
     tvText.setText("Требуется перезапуск");
-    tvText.setTextColor(Theme.getColor(ColorId.textPrimary));
+    tvText.setTextColor(Theme.getColor(ColorId.headerText));
     tvText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
     tvText.setTypeface(Typeface.DEFAULT_BOLD);
     LinearLayout.LayoutParams lpText = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f);
@@ -165,7 +170,7 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
 
     TextView tvButton = new TextView(context);
     tvButton.setText("ПЕРЕЗАПУСК");
-    tvButton.setTextColor(Theme.getColor(ColorId.textAction));
+    tvButton.setTextColor(Theme.getColor(ColorId.headerLightIcon));
     tvButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
     tvButton.setTypeface(Typeface.DEFAULT_BOLD);
     tvButton.setPadding(Screen.dp(8f), Screen.dp(6f), Screen.dp(8f), Screen.dp(6f));
@@ -179,8 +184,8 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
     restartBanner.setAlpha(0f);
     restartBanner.setTranslationY(Screen.dp(60f));
 
-    if (getContentView() instanceof ViewGroup) {
-      ((ViewGroup) getContentView()).addView(restartBanner);
+    if (getValue() instanceof ViewGroup) {
+      ((ViewGroup) getValue()).addView(restartBanner);
     }
   }
 

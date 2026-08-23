@@ -47,6 +47,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.ui.EmojiStatusSelectorEmojiPage;
+import org.thunderdog.challegram.unsorted.FomagramSettings;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.Text;
@@ -319,11 +320,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
       userId = account.getKnownUserId();
       if (account.hasUserInfo()) {
         name = account.getName();
-        if (Settings.instance().needHidePhoneNumber()) {
-          phone = Strings.replaceNumbers(Strings.formatPhone(account.getPhoneNumber()));
-        } else {
-          phone = Strings.formatPhone(account.getPhoneNumber());
-        }
+        phone = FomagramSettings.formatPhoneNumber(account.getPhoneNumber(), false);
       } else {
         name = Lang.getString(R.string.LoadingUser);
         phone = Lang.getString(R.string.LoadingPhone);
@@ -348,7 +345,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
       }
       this.trimmedWidth = availWidth;
       this.trimmedName = new Text.Builder(name, availWidth, Paints.robotoStyleProvider(15), this).singleLine().allBold().build();
-      this.trimmedPhone = new Text.Builder(phone, availWidth, Paints.robotoStyleProvider(13), this).singleLine().allBold().build();
+      this.trimmedPhone = !StringUtils.isEmpty(phone) ? new Text.Builder(phone, availWidth, Paints.robotoStyleProvider(13), this).singleLine().allBold().build() : null;
     }
 
     private static final int FLAG_EQUAL_NUMBERS = 1;

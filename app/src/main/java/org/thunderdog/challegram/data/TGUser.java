@@ -29,6 +29,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.unsorted.FomagramSettings;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.text.Text;
 
@@ -312,7 +313,7 @@ public class TGUser implements UserProvider {
     if ((flags & FLAG_CUSTOM_STATUS_TEXT) != 0) {
       return true;
     } else if (((flags & FLAG_CONTACT) != 0 || (flags & FLAG_SHOW_PHONE_NUMBER) != 0) && user != null) {
-      statusText = Strings.formatPhone(user.phoneNumber);
+      statusText = FomagramSettings.formatPhoneNumber(user.phoneNumber, !tdlib.isSelfUserId(user.id));
     } else if ((flags & FLAG_USERNAME) != 0 && user != null && !Td.isEmpty(user.usernames)) {
       TdApi.Usernames usernames = user.usernames;
       statusText = Td.isEmpty(user.usernames) ? Strings.join(Lang.getConcatSeparator(), usernames.activeUsernames, username -> "@" + username) : null;
@@ -320,7 +321,7 @@ public class TGUser implements UserProvider {
       statusText = role != 0 ? TD.getRoleName(user, role) : null;
     }
     if ((flags & FLAG_LOCAL) != 0) {
-      statusText = Strings.formatPhone(phoneNumber, false, true);
+      statusText = FomagramSettings.formatPhoneNumber(phoneNumber, true);
     } else if (statusText == null) {
       if (userId != 0) {
         flags = BitwiseUtils.setFlag(flags, FLAG_ONLINE, tdlib.cache().isOnline(userId));

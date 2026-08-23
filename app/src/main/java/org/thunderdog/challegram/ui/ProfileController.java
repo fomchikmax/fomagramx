@@ -102,6 +102,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.FomagramSettings;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
@@ -1765,8 +1766,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           view.setName(getUsernameName());
           view.setData(getUsernameData());
         } else if (itemId == R.id.btn_phone) {
-          if (tdlib.isSelfUserId(user.id) && Settings.instance().needHidePhoneNumber()) {
-            view.setData(Strings.replaceNumbers(Strings.formatPhone(user.phoneNumber)));
+          boolean isSelf = tdlib.isSelfUserId(user.id);
+          String phoneFormatted = FomagramSettings.formatPhoneNumber(user.phoneNumber, !isSelf);
+          if (!StringUtils.isEmpty(phoneFormatted)) {
+            view.setData(phoneFormatted);
           } else if (!StringUtils.isEmpty(user.phoneNumber)) {
             view.setData(Strings.formatPhone(user.phoneNumber));
           } else {

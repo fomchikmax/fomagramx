@@ -73,6 +73,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.FomagramSettings;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.AppBuildInfo;
@@ -603,8 +604,10 @@ public class SettingsController extends ViewController<Void> implements
       items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     }
     items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, R.string.Username).setContentStrings(R.string.LoadingUsername, R.string.SetUpUsername));
-    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
-    items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_phone, R.drawable.baseline_phone_24, R.string.Phone));
+    if (!FomagramSettings.isHidePhoneView()) {
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+      items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_phone, R.drawable.baseline_phone_24, R.string.Phone));
+    }
     if (userFull != null && userFull.birthdate != null) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       items.add(newBirthdateItem());
@@ -993,10 +996,8 @@ public class SettingsController extends ViewController<Void> implements
   private boolean setPhoneNumber (@Nullable TdApi.User user) {
     String displayPhoneNumber;
     if (user != null) {
-      displayPhoneNumber = originalPhoneNumber = Strings.formatPhone(user.phoneNumber);
-      if (Settings.instance().needHidePhoneNumber()) {
-        displayPhoneNumber = Strings.replaceNumbers(displayPhoneNumber);
-      }
+      originalPhoneNumber = Strings.formatPhone(user.phoneNumber);
+      displayPhoneNumber = FomagramSettings.formatPhoneNumber(user.phoneNumber, false);
     } else {
       displayPhoneNumber = Lang.getString(R.string.LoadingPhone);
       originalPhoneNumber = null;

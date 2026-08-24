@@ -145,11 +145,11 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
 
     adapter.setItems(items, false);
     recyclerView.setAdapter(adapter);
-
-    setupRestartBanner(context);
   }
 
-  private void setupRestartBanner (Context context) {
+  private void setupRestartBanner () {
+    if (restartBanner != null) return;
+    Context context = context();
     restartBanner = new LinearLayout(context);
     restartBanner.setOrientation(LinearLayout.HORIZONTAL);
     restartBanner.setGravity(Gravity.CENTER_VERTICAL);
@@ -184,12 +184,14 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
     restartBanner.setAlpha(0f);
     restartBanner.setTranslationY(Screen.dp(60f));
 
-    if (getValue() instanceof ViewGroup) {
-      ((ViewGroup) getValue()).addView(restartBanner);
+    View root = getWrapUnchecked();
+    if (root instanceof ViewGroup) {
+      ((ViewGroup) root).addView(restartBanner);
     }
   }
 
   public void showRestartBanner () {
+    setupRestartBanner();
     if (restartBanner == null) return;
     restartBanner.setVisibility(View.VISIBLE);
     restartBanner.animate().alpha(1f).translationY(0f).setDuration(250).start();

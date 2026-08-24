@@ -84,6 +84,7 @@ public final class FomagramSettings {
 
   private static final String KEY_USERNAME_MODE = "fomagram_username_mode";
   private static final String KEY_MASK_ALL_USERNAMES = "fomagram_mask_all_usernames";
+  private static final String KEY_MASK_CHANNELS_AND_GROUPS = "fomagram_mask_channels_and_groups";
   private static final String KEY_FAKE_USERNAME = "fomagram_fake_username";
 
   public static int getUsernameMode () {
@@ -100,6 +101,14 @@ public final class FomagramSettings {
 
   public static void setMaskAllUsernames (boolean maskAll) {
     Settings.instance().putBoolean(KEY_MASK_ALL_USERNAMES, maskAll);
+  }
+
+  public static boolean isMaskChannelsAndGroups () {
+    return Settings.instance().getBoolean(KEY_MASK_CHANNELS_AND_GROUPS, false);
+  }
+
+  public static void setMaskChannelsAndGroups (boolean mask) {
+    Settings.instance().putBoolean(KEY_MASK_CHANNELS_AND_GROUPS, mask);
   }
 
   public static boolean hasFakeUsername () {
@@ -132,6 +141,11 @@ public final class FomagramSettings {
       return !isOtherUser || isMaskAllUsernames();
     }
     return false;
+  }
+
+  public static boolean isHideChannelUsernameView () {
+    int mode = getUsernameMode();
+    return mode == USERNAME_MODE_HIDE_VIEW && isMaskChannelsAndGroups();
   }
 
   public static String formatUsername (@Nullable String rawUsername, boolean isOtherUser) {

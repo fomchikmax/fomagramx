@@ -117,6 +117,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
 
   private float avatarAllowanceFactor, avatarCollapseFactor;
   private BoolAnimator avatarCollapseAnimator;
+  private boolean isTranslating;
 
   private int flags;
 
@@ -334,6 +335,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
 
   @Override
   public void setScaleFactor (float scaleFactor, float fromFactor, float toScaleFactor, boolean byScroll) {
+    this.isTranslating = !byScroll && (fromFactor != toScaleFactor);
     if (scaleFactor == 1f) {
       setHadFullExpand();
     }
@@ -534,21 +536,27 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
   }
 
   private void layoutReceiver () {
-    boolean isIos = FomagramSettings.isIosChatStyle() && (
-      (this instanceof org.thunderdog.challegram.component.chat.ChatHeaderView) ||
-      (parent instanceof org.thunderdog.challegram.ui.ProfileController)
+    boolean isIosChat = (this instanceof org.thunderdog.challegram.component.chat.ChatHeaderView) && FomagramSettings.isIosChatStyle();
+    boolean isIosProfileOrSettings = FomagramSettings.isIosChatStyle() && (
+      (parent instanceof org.thunderdog.challegram.ui.ProfileController) ||
+      (parent instanceof org.thunderdog.challegram.ui.SettingsController)
     );
+
     float baseRadius = Screen.dp(getBaseAvatarRadiusDp());
-    float baseCenterX = isIos ? (getMeasuredWidth() - Screen.dp(16f) - baseRadius) : (innerLeftMargin + Screen.dp(4f) + baseRadius);
+    float baseCenterX;
+    if (isIosChat) {
+      baseCenterX = getMeasuredWidth() - Screen.dp(16f) - baseRadius;
+    } else if (isIosProfileOrSettings && isTranslating) {
+      baseCenterX = getMeasuredWidth() - Screen.dp(16f) - baseRadius;
+    } else {
+      baseCenterX = innerLeftMargin + Screen.dp(4f) + baseRadius;
+    }
     float baseCenterY = currentHeaderOffset + HeaderView.getSize(false) / 2;
 
     float scaleFactor = calculateRealScaleFactor();
 
     if (scaleFactor != 0f) {
-      if (isIos) {
-        float targetCenterX = (innerLeftMargin + Screen.dp(4f) + baseRadius) - Screen.dp(33f);
-        baseCenterX = MathUtils.fromTo(baseCenterX, targetCenterX, scaleFactor);
-      } else {
+      if (!isIosChat && !(isIosProfileOrSettings && isTranslating)) {
         baseCenterX += -Screen.dp(33f) * scaleFactor;
       }
       baseCenterY += Screen.dp(64f) * scaleFactor;
@@ -558,7 +566,6 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
     float expandFactor = getAvatarExpandFactor();
     int viewCenterX = getMeasuredWidth() / 2;
     int viewCenterY = currentHeaderOffset + (calculateHeaderHeight() - currentHeaderOffset) / 2;
-    // avatarReceiver.setRadius(Math.round(baseRadius * (1f - expandFactor)));
     receiver.forceFullScreen(expandFactor != 0f, expandFactor);
 
     baseRadius += (viewCenterX - baseRadius) * expandFactor;
@@ -621,7 +628,11 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
   }
 
   private int getBaseTextMaxWidth () {
-    boolean isIos = (this instanceof org.thunderdog.challegram.component.chat.ChatHeaderView) && FomagramSettings.isIosChatStyle();
+    boolean isIos = FomagramSettings.isIosChatStyle() && (
+      (this instanceof org.thunderdog.challegram.component.chat.ChatHeaderView) ||
+      (parent instanceof org.thunderdog.challegram.ui.ProfileController) ||
+      (parent instanceof org.thunderdog.challegram.ui.SettingsController)
+    );
     if (isIos) {
       int sideMargin = Math.max(innerLeftMargin, Screen.dp(56f));
       return Math.max(0, getMeasuredWidth() - sideMargin * 2);
@@ -887,10 +898,19 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
       final float textScaleFactor = MathUtils.fromTo(1f + scaleFactor * .1f, avatarTextScale, avatarExpandFactor);
 
       layoutReceiver();
-      if (receiver.needPlaceholder()) {
-        receiver.drawPlaceholderRounded(c, receiver.getDisplayRadius(), Theme.headerPlaceholderColor());
+      boolean isIosProfileOrSettings = FomagramSettings.isIosChatStyle() && (
+        (parent instanceof org.thunderdog.challegram.ui.ProfileController) ||
+        (parent instanceof org.thunderdog.challegram.ui.SettingsController)
+      );
+      float avatarAlpha = isIosProfileOrSettings ? (isTranslating ? 1f : avatarExpandFactor) : 1f;
+
+      if (avatarAlpha > 0f) {
+        receiver.setAlpha(avatarAlpha);
+        if (receiver.needPlaceholder()) {
+          receiver.drawPlaceholderRounded(c, receiver.getDisplayRadius(), ColorUtils.alphaColor(avatarAlpha, Theme.headerPlaceholderColor()));
+        }
+        receiver.draw(c);
       }
-      receiver.draw(c);
       if (avatarExpandFactor > 0f && receiver.getRequestedPlaceholder() == null) {
         getTopShadow().setAlpha((int) (255f * .8f * avatarExpandFactor));
         getTopShadow().draw(c);
@@ -905,18 +925,24 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
         c.restore();
       }
 
-      boolean isIos = (this instanceof org.thunderdog.challegram.component.chat.ChatHeaderView) && FomagramSettings.isIosChatStyle();
+      boolean isIos = FomagramSettings.isIosChatStyle() && (
+        (this instanceof org.thunderdog.challegram.component.chat.ChatHeaderView) ||
+        (parent instanceof org.thunderdog.challegram.ui.ProfileController) ||
+        (parent instanceof org.thunderdog.challegram.ui.SettingsController)
+      );
       float baseTextLeft = isIos && trimmedTitle != null
         ? Math.max(innerLeftMargin, (viewWidth - trimmedTitle.getWidth() * textScaleFactor) / 2f)
         : (innerLeftMargin + Screen.dp(4f) + Screen.dp(getBaseAvatarRadiusDp()) * 2 + Screen.dp(9f));
       float baseSubtitleLeft = isIos && trimmedSubtitle != null
         ? Math.max(innerLeftMargin, (viewWidth - trimmedSubtitle.getWidth()) / 2f)
-        : baseTextLeft;
+        : (isIos ? baseTextLeft : (innerLeftMargin + Screen.dp(4f) + Screen.dp(getBaseAvatarRadiusDp()) * 2 + Screen.dp(9f)));
       float baseTitleTop = currentHeaderOffset + Screen.dp(7f);
       float baseSubtitleTop = currentHeaderOffset + Screen.dp(30f);
       if (scaleFactor != 0f) {
-        baseTextLeft += -Screen.dp(11f) * scaleFactor;
-        baseSubtitleLeft += -Screen.dp(11f) * scaleFactor;
+        if (!isIos) {
+          baseTextLeft += -Screen.dp(11f) * scaleFactor;
+          baseSubtitleLeft += -Screen.dp(11f) * scaleFactor;
+        }
         baseTitleTop += Screen.dp(62f) * scaleFactor;
         baseSubtitleTop += Screen.dp(68f) * scaleFactor;
       }
@@ -1099,6 +1125,16 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
   }
 
   private boolean checkCaught (float x, float y, boolean set) {
+    boolean isIosProfileOrSettings = FomagramSettings.isIosChatStyle() && (
+      (parent instanceof org.thunderdog.challegram.ui.ProfileController) ||
+      (parent instanceof org.thunderdog.challegram.ui.SettingsController)
+    );
+    if (isIosProfileOrSettings && getAvatarExpandFactor() < 0.2f) {
+      if (set) {
+        flags &= ~FLAG_CAUGHT;
+      }
+      return false;
+    }
     if ((receiver.getRequestedPlaceholder() != null && (flags & FLAG_ALLOW_EMPTY_CLICK) == 0) || callback == null) {
       if (set) {
         flags &= ~FLAG_CAUGHT;
@@ -1249,6 +1285,13 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
 
   @Override
   public boolean needsForceTouch (BaseView v, float x, float y) {
+    boolean isIosProfileOrSettings = FomagramSettings.isIosChatStyle() && (
+      (parent instanceof org.thunderdog.challegram.ui.ProfileController) ||
+      (parent instanceof org.thunderdog.challegram.ui.SettingsController)
+    );
+    if (isIosProfileOrSettings && getAvatarExpandFactor() < 0.2f) {
+      return false;
+    }
     int bound = Screen.dp(6f);
     return (receiver.getRequestedChatPhoto() != null || receiver.getRequestedProfilePhoto() != null || receiver.getRequestedChatPhotoInfo() != null) && x >= receiver.getLeft() - bound && x < receiver.getRight() + bound && y >= receiver.getTop() - bound && y < receiver.getBottom() + bound;
   }

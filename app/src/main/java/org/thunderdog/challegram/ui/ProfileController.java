@@ -426,7 +426,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
       int buttonColorId = getHeaderIconColorId();
 
-      if (mode == Mode.SECRET || mode == Mode.USER) {
+      if ((mode == Mode.SECRET || mode == Mode.USER) && !FomagramSettings.isIosChatStyle()) {
         callButton = header.addButton(realMenu, R.id.menu_btn_call, R.drawable.baseline_phone_24, buttonColorId, this, Screen.dp(48f));
         callButton.setAlpha(userFull != null && (userFull.canBeCalled || userFull.hasPrivateCalls) ? 1f : 0f);
       }
@@ -434,7 +434,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       if (mode == Mode.SECRET) {
         StopwatchHeaderButton headerButton = header.addStopwatchButton(realMenu, this);
         headerButton.forceValue(tdlib.ui().getTTLShort(chat.id), tdlib.canChangeMessageAutoDeleteTime(chat.id));
-        if (!headerButton.getIsVisible()) {
+        if (!headerButton.getIsVisible() && callButton != null) {
           callButton.setTranslationX(Screen.dp(StopwatchHeaderButton.WIDTH));
         }
       }
@@ -662,6 +662,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (FomagramSettings.isIosChatStyle()) {
+      if (userFull != null && (userFull.canBeCalled || userFull.hasPrivateCalls)) {
+        ids.append(R.id.btn_call);
+        strings.append(R.string.Call);
+      }
+
       ids.append(R.id.btn_search);
       strings.append(R.string.Search);
 
@@ -743,6 +748,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onMoreItemPressed (int id) {
     if (tdlib.ui().processLeaveButton(this, null, getChatId(), id, null)) {
+      return;
+    }
+    if (id == R.id.btn_call) {
+      if (userFull != null) {
+        tdlib.context().calls().makeCall(this, user.id, userFull);
+      }
       return;
     }
     if (id == R.id.btn_mute) {
@@ -2078,6 +2089,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
         return TD.toCharSequence(formattedText);
       } else if (!tdlib.isUserChat(chat) || tdlib.isBotChat(chat)) {
+        if (!tdlib.isUserChat(chat) && FomagramSettings.isMaskChannelsAndGroups() && FomagramSettings.getUsernameMode() == FomagramSettings.USERNAME_MODE_MASK) {
+          String primary = Td.primaryUsername(usernames);
+          StringBuilder sb = new StringBuilder();
+          for (int i = 0; i < primary.length(); i++) sb.append("*");
+          return "https://t.me/" + sb.toString();
+        }
         return tdlib.tMeUrl(usernames, true);
       }
     }
@@ -2087,13 +2104,22 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private String getUsernameData () {
     TdApi.Usernames usernames = tdlib.chatUsernames(chat);
     if (usernames != null && Td.hasUsername(usernames)) {
+      boolean isUser = tdlib.isUserChat(chat);
       boolean isOtherUser = isUserMode() && user != null && !tdlib.isSelfUserId(user.id);
       String primary = Td.primaryUsername(usernames);
-      String formatted = FomagramSettings.formatUsername(primary, isOtherUser);
-      if (tdlib.isUserChat(chat)) { // Bots + Users: @username
+      if (isUser) {
+        String formatted = FomagramSettings.formatUsername(primary, isOtherUser);
         return formatted;
-      } else { // Otherwise: /username
-        return "/" + (formatted.startsWith("@") ? formatted.substring(1) : formatted);
+      } else {
+        boolean mask = FomagramSettings.isMaskChannelsAndGroups() && FomagramSettings.getUsernameMode() == FomagramSettings.USERNAME_MODE_MASK;
+        if (mask) {
+          StringBuilder sb = new StringBuilder();
+          for (int i = 0; i < primary.length(); i++) {
+            sb.append("*");
+          }
+          return "/" + sb.toString();
+        }
+        return "/" + primary;
       }
     } else {
       return "";
@@ -2102,7 +2128,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private int calculateMenuWidth () {
     int totalWidth = 0;
-    if (mode == Mode.SECRET || mode == Mode.USER) {
+    if ((mode == Mode.SECRET || mode == Mode.USER) && !FomagramSettings.isIosChatStyle()) {
       totalWidth += Screen.dp(48f);
     }
     if (mode == Mode.SECRET && tdlib.canChangeMessageAutoDeleteTime(chat.id)) {
@@ -3118,7 +3144,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       addedCount++;
     }
 
-    if (isPublic) {
+    if (isPublic && !FomagramSettings.isHideChannelUsernameView()) {
       ListItem usernameItem = newUsernameItem();
       if (usernameItem != null) {
         if (addedCount > 0) {
@@ -3203,7 +3229,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       addedCount++;
     }
 
-    if (isPublic) {
+    if (isPublic && !FomagramSettings.isHideChannelUsernameView()) {
       ListItem usernameItem = newUsernameItem();
       if (usernameItem != null) {
         if (addedCount > 0) {

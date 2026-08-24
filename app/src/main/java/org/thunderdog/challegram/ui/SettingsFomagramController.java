@@ -75,6 +75,8 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
           view.setData(getUsernameMaskTitle(FomagramSettings.getUsernameMode()));
         } else if (itemId == R.id.btn_fomagram_mask_all_usernames) {
           view.getToggler().setRadioEnabled(FomagramSettings.isMaskAllUsernames(), isUpdate);
+        } else if (itemId == R.id.btn_fomagram_mask_channels_and_groups) {
+          view.getToggler().setRadioEnabled(FomagramSettings.isMaskChannelsAndGroups(), isUpdate);
         } else if (itemId == R.id.btn_fomagram_username_fake) {
           view.setData(FomagramSettings.hasFakeUsername() ? "@" + FomagramSettings.getFakeUsername() : "Выкл");
         } else if (itemId == R.id.btn_fomagram_drawer_hide_contacts) {
@@ -114,6 +116,8 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_fomagram_username_mask, 0, "Скрытие ника"));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_fomagram_mask_all_usernames, 0, "Скрывать у других"));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_fomagram_mask_channels_and_groups, 0, "Также скрывать у каналов и групп"));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_fomagram_username_fake, 0, "Фейковый ник"));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -251,6 +255,9 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
       showUsernameMaskOptions();
     } else if (viewId == R.id.btn_fomagram_mask_all_usernames) {
       FomagramSettings.setMaskAllUsernames(adapter.toggleView(v));
+      showRestartBanner();
+    } else if (viewId == R.id.btn_fomagram_mask_channels_and_groups) {
+      FomagramSettings.setMaskChannelsAndGroups(adapter.toggleView(v));
       showRestartBanner();
     } else if (viewId == R.id.btn_fomagram_username_fake) {
       showFakeUsernameDialog();

@@ -1433,6 +1433,7 @@
   <item type="id" name="btn_fomagram_username_mask_hide_view" />
   <item type="id" name="btn_fomagram_username_fake" />
   <item type="id" name="btn_fomagram_mask_all_usernames" />
+  <item type="id" name="btn_fomagram_mask_channels_and_groups" />
 
   <item type="id" name="btn_fomagram_drawer_hide_contacts" />
   <item type="id" name="btn_fomagram_drawer_hide_calls" />

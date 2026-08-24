@@ -755,11 +755,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
     if (id == R.id.btn_search) {
       navigateBack();
-      ViewController<?> top = getNavigationController() != null ? getNavigationController().findCurrentController() : null;
-      if (top instanceof MessagesController) {
-        ((MessagesController) top).openSearchMode();
-      } else {
-        tdlib.ui().openChat(this, getChatId(), new TdlibUi.ChatOpenParameters().searchQuery(""));
+      if (headerView != null) {
+        headerView.openSearchMode();
       }
       return;
     }

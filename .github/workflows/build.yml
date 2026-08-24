@@ -13,7 +13,7 @@ on:
       build_arm32:
         description: 'Собрать ARM32 (armeabi-v7a)'
         type: boolean
-        default: false
+        default: true
       build_universal:
         description: 'Собрать Universal (все архитектуры)'
         type: boolean
@@ -29,58 +29,11 @@ on:
         description: 'Автоматически подписать APK (чтобы сразу ставился на девайс)'
         type: boolean
         default: true
-      telegram_api_id:
-        description: 'Telegram API ID (если пусто - берется из Secrets)'
-        required: false
-        default: ''
-        type: string
-      telegram_api_hash:
-        description: 'Telegram API Hash (если пусто - берется из Secrets)'
-        required: false
-        default: ''
-        type: string
 
 jobs:
-  prepare:
-    name: Select Architectures
-    runs-on: ubuntu-latest
-    outputs:
-      flavors: ${{ steps.set-flavors.outputs.flavors }}
-    steps:
-      - id: set-flavors
-        run: |
-          FLAVORS=()
-          if [ "${{ github.event_name }}" = "push" ]; then
-            FLAVORS+=("arm64")
-          else
-            if [ "${{ github.event.inputs.build_arm64 }}" = "true" ]; then
-              FLAVORS+=("arm64")
-            fi
-            if [ "${{ github.event.inputs.build_arm32 }}" = "true" ]; then
-              FLAVORS+=("arm32")
-            fi
-            if [ "${{ github.event.inputs.build_universal }}" = "true" ]; then
-              FLAVORS+=("universal")
-            fi
-          fi
-
-          if [ ${#FLAVORS[@]} -eq 0 ]; then
-            echo "No architectures selected, falling back to arm64"
-            FLAVORS+=("arm64")
-          fi
-
-          JSON_ARRAY=$(jq -c -n '$ARGS.positional' --args "${FLAVORS[@]}")
-          echo "Selected flavors: $JSON_ARRAY"
-          echo "flavors=$JSON_ARRAY" >> "$GITHUB_OUTPUT"
-
   build:
-    name: Build ${{ matrix.flavor }} APK
-    needs: prepare
+    name: Build FomagramX APKs
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        flavor: ${{ fromJson(needs.prepare.outputs.flavors) }}
     env:
       TERM: xterm-256color
       DEBIAN_FRONTEND: noninteractive
@@ -202,17 +155,12 @@ jobs:
 
       - name: Setup local.properties and Keystore
         env:
-          INPUT_API_ID: ${{ github.event.inputs.telegram_api_id }}
-          INPUT_API_HASH: ${{ github.event.inputs.telegram_api_hash }}
-          SECRET_API_ID: ${{ secrets.TELEGRAM_API_ID }}
-          SECRET_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
           SIGN_APK: ${{ github.event.inputs.sign_apk }}
         run: |
-          API_ID="${INPUT_API_ID:-$SECRET_API_ID}"
-          API_HASH="${INPUT_API_HASH:-$SECRET_API_HASH}"
-
           if [ -z "$API_ID" ] || [ -z "$API_HASH" ]; then
-            echo "::error::API_ID или API_HASH пустые! Укажи их при запуске воркфлоу или сохрани в Settings -> Secrets (TELEGRAM_API_ID, TELEGRAM_API_HASH)."
+            echo "::error::TELEGRAM_API_ID или TELEGRAM_API_HASH пустые в GitHub Secrets! Сохрани их в Settings -> Secrets (TELEGRAM_API_ID, TELEGRAM_API_HASH)."
             exit 1
           fi
 
@@ -273,34 +221,33 @@ jobs:
 
       - name: Build APK via Gradle
         env:
-          FLAVOR: ${{ matrix.flavor }}
           BUILD_TYPE: ${{ github.event.inputs.build_type || 'release' }}
+          INPUT_ARM64: ${{ github.event.inputs.build_arm64 }}
+          INPUT_ARM32: ${{ github.event.inputs.build_arm32 }}
+          INPUT_UNIVERSAL: ${{ github.event.inputs.build_universal }}
         run: |
           BUILD_TYPE_CAP="$(tr '[:lower:]' '[:upper:]' <<< ${BUILD_TYPE:0:1})${BUILD_TYPE:1}"
 
-          case "$FLAVOR" in
-            universal)
-              TASK="assembleLatestUniversal${BUILD_TYPE_CAP}"
-              ;;
-            arm64)
-              TASK="assembleLatestArm64${BUILD_TYPE_CAP}"
-              ;;
-            arm32)
-              TASK="assembleLatestArm32${BUILD_TYPE_CAP}"
-              ;;
-            x64)
-              TASK="assembleLatestX64${BUILD_TYPE_CAP}"
-              ;;
-            x86)
-              TASK="assembleLatestX86${BUILD_TYPE_CAP}"
-              ;;
-            *)
-              TASK="assembleLatestUniversal${BUILD_TYPE_CAP}"
-              ;;
-          esac
+          TASKS=()
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TASKS+=("assembleLatestArm64${BUILD_TYPE_CAP}" "assembleLatestArm32${BUILD_TYPE_CAP}")
+          else
+            if [ "$INPUT_ARM64" = "true" ] || [ -z "$INPUT_ARM64" ]; then
+              TASKS+=("assembleLatestArm64${BUILD_TYPE_CAP}")
+            fi
+            if [ "$INPUT_ARM32" = "true" ] || [ -z "$INPUT_ARM32" ]; then
+              TASKS+=("assembleLatestArm32${BUILD_TYPE_CAP}")
+            fi
+            if [ "$INPUT_UNIVERSAL" = "true" ]; then
+              TASKS+=("assembleLatestUniversal${BUILD_TYPE_CAP}")
+            fi
+            if [ ${#TASKS[@]} -eq 0 ]; then
+              TASKS+=("assembleLatestArm64${BUILD_TYPE_CAP}" "assembleLatestArm32${BUILD_TYPE_CAP}")
+            fi
+          fi
 
-          echo "Building $FLAVOR with task: ./gradlew $TASK"
-          ./gradlew $TASK --stacktrace --no-daemon
+          echo "Building with tasks: ./gradlew ${TASKS[@]}"
+          ./gradlew "${TASKS[@]}" --stacktrace --no-daemon
 
       - name: Verify, Sign and Prepare APKs
         run: |
@@ -327,6 +274,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: fomagramx-${{ matrix.flavor }}-${{ github.event.inputs.build_type || 'release' }}-apk
+          name: fomagramx-${{ github.event.inputs.build_type || 'release' }}-apks
           path: dist/*.apk
           retention-days: 14

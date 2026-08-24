@@ -663,7 +663,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     if (FomagramSettings.isIosChatStyle()) {
       if (userFull != null && (userFull.canBeCalled || userFull.hasPrivateCalls)) {
-        ids.append(R.id.btn_call);
+        ids.append(R.id.menu_btn_call);
         strings.append(R.string.Call);
       }
 
@@ -750,7 +750,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (tdlib.ui().processLeaveButton(this, null, getChatId(), id, null)) {
       return;
     }
-    if (id == R.id.btn_call) {
+    if (id == R.id.menu_btn_call) {
       if (userFull != null) {
         tdlib.context().calls().makeCall(this, user.id, userFull);
       }

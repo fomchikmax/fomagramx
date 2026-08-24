@@ -155,9 +155,12 @@ jobs:
             tdlib
             vkryl
             thirdparty
-          key: submodules-${{ runner.os }}-${{ hashFiles('.gitmodules', 'version.properties') }}
+          key: submodules-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
+          restore-keys: |
+            submodules-${{ runner.os }}-
 
       - name: Clone and sync all git submodules
+        if: steps.restore-submodules.outputs.cache-hit != 'true'
         run: |
           python3 scripts/sync-submodules.py
 
@@ -170,7 +173,7 @@ jobs:
             tdlib
             vkryl
             thirdparty
-          key: submodules-${{ runner.os }}-${{ hashFiles('.gitmodules', 'version.properties') }}
+          key: submodules-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
 
       - name: Restore Native Compiled Libraries
         id: restore-native
@@ -181,7 +184,9 @@ jobs:
             app/jni/third_party/ffmpeg/build
             app/jni/third_party/androidx-media
             app/jni/third_party/opus
-          key: native-libs-${{ runner.os }}-${{ hashFiles('version.properties', 'scripts/private/**', '.gitmodules') }}
+          key: native-libs-${{ runner.os }}-${{ hashFiles('.gitmodules', 'scripts/private/**') }}
+          restore-keys: |
+            native-libs-${{ runner.os }}-
 
       - name: Setup local.properties and Keystore
         env:
@@ -247,7 +252,7 @@ jobs:
             app/jni/third_party/ffmpeg/build
             app/jni/third_party/androidx-media
             app/jni/third_party/opus
-          key: native-libs-${{ runner.os }}-${{ hashFiles('version.properties', 'scripts/private/**', '.gitmodules') }}
+          key: native-libs-${{ runner.os }}-${{ hashFiles('.gitmodules', 'scripts/private/**') }}
 
       - name: Build APK via Gradle
         env:

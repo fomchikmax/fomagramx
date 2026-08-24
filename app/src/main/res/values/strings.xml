@@ -3799,7 +3799,7 @@
   <string name="ChatBannedUntil">Admins have banned you in this group until %1$s</string>
 
   <string name="UpgradeChatPrompt">To perform this action, this chat will be converted to supergroup.\n\n**Note**: new members will not see messages sent before the conversion.</string>
-  <string name="AppUpdateReady">Telegram X is ready to be updated.</string>
+  <string name="AppUpdateReady">Fomagram X is ready to be updated.</string>
   <string name="AppUpdateRestart">Restart</string>
   <string name="AppUpdateInstall">Update</string>
 
@@ -4627,10 +4627,10 @@
   <string name="DownloadUpdateSize">Download update (%1$s)</string>
   <string name="DownloadUpdate">Download update</string>
   <string name="UpdateSourceChanges">View source code changes</string>
-  <string name="AppUpdateAvailablePrompt">A new **Telegram X** update is available. Would you like to download? (%1$s)</string>
-  <string name="AppUpdateAvailableVersionPrompt">A new **Telegram X** `%2$s` update is available. Would you like to download? (%1$s)</string>
+  <string name="AppUpdateAvailablePrompt">A new **Fomagram X** update is available. Would you like to download? (%1$s)</string>
+  <string name="AppUpdateAvailableVersionPrompt">A new **Fomagram X** `%2$s` update is available. Would you like to download? (%1$s)</string>
 
-  <string name="AppSignature">**Telegram X** `%1$s`</string>
+  <string name="AppSignature">**Fomagram X** `%1$s`</string>
 
   <string name="ScanQR">Scan QR</string>
   <string name="ScanQRLogInInfo">Use camera to sign in on the desktop app.</string>

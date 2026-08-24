@@ -318,11 +318,12 @@ public class Lang {
         languagePackInfo = Settings.instance().getLanguagePackInfo();
       final String key = getResourceEntryName(resId);
       TdApi.LanguagePackStringValueOrdinary string = getStringValue(key, languagePackInfo);
-      if (string != null)
-        return string.value;
+      if (string != null && string.value != null)
+        return string.value.replace("Telegram X", "Fomagram X");
     }
     try {
-      return getAndroidString(resId);
+      String res = getAndroidString(resId);
+      return res != null ? res.replace("Telegram X", "Fomagram X") : "";
     } catch (Resources.NotFoundException e) {
       Log.e("Resource not found (shitty modified lang pack?): %d %s", resId, getResourceEntryName(resId));
       return "";

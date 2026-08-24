@@ -534,7 +534,10 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
   }
 
   private void layoutReceiver () {
-    boolean isIos = (this instanceof org.thunderdog.challegram.component.chat.ChatHeaderView) && FomagramSettings.isIosChatStyle();
+    boolean isIos = FomagramSettings.isIosChatStyle() && (
+      (this instanceof org.thunderdog.challegram.component.chat.ChatHeaderView) ||
+      (parent instanceof org.thunderdog.challegram.ui.ProfileController)
+    );
     float baseRadius = Screen.dp(getBaseAvatarRadiusDp());
     float baseCenterX = isIos ? (getMeasuredWidth() - Screen.dp(16f) - baseRadius) : (innerLeftMargin + Screen.dp(4f) + baseRadius);
     float baseCenterY = currentHeaderOffset + HeaderView.getSize(false) / 2;
@@ -542,7 +545,12 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
     float scaleFactor = calculateRealScaleFactor();
 
     if (scaleFactor != 0f) {
-      baseCenterX += -Screen.dp(33f) * scaleFactor;
+      if (isIos) {
+        float targetCenterX = (innerLeftMargin + Screen.dp(4f) + baseRadius) - Screen.dp(33f);
+        baseCenterX = MathUtils.fromTo(baseCenterX, targetCenterX, scaleFactor);
+      } else {
+        baseCenterX += -Screen.dp(33f) * scaleFactor;
+      }
       baseCenterY += Screen.dp(64f) * scaleFactor;
       baseRadius += Screen.dp(10f) * scaleFactor;
     }

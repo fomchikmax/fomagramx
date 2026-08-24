@@ -31,9 +31,46 @@ on:
         default: true
 
 jobs:
+  prepare:
+    name: Select Architectures
+    runs-on: ubuntu-latest
+    outputs:
+      flavors: ${{ steps.set-flavors.outputs.flavors }}
+    steps:
+      - id: set-flavors
+        run: |
+          FLAVORS=()
+          if [ "${{ github.event_name }}" = "push" ]; then
+            FLAVORS+=("arm64" "arm32")
+          else
+            if [ "${{ github.event.inputs.build_arm64 }}" = "true" ]; then
+              FLAVORS+=("arm64")
+            fi
+            if [ "${{ github.event.inputs.build_arm32 }}" = "true" ]; then
+              FLAVORS+=("arm32")
+            fi
+            if [ "${{ github.event.inputs.build_universal }}" = "true" ]; then
+              FLAVORS+=("universal")
+            fi
+          fi
+
+          if [ ${#FLAVORS[@]} -eq 0 ]; then
+            echo "No architectures selected, falling back to arm64 and arm32"
+            FLAVORS+=("arm64" "arm32")
+          fi
+
+          JSON_ARRAY=$(jq -c -n '$ARGS.positional' --args "${FLAVORS[@]}")
+          echo "Selected flavors: $JSON_ARRAY"
+          echo "flavors=$JSON_ARRAY" >> "$GITHUB_OUTPUT"
+
   build:
-    name: Build FomagramX APKs
+    name: Build ${{ matrix.flavor }} APK
+    needs: prepare
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: ${{ fromJson(needs.prepare.outputs.flavors) }}
     env:
       TERM: xterm-256color
       DEBIAN_FRONTEND: noninteractive
@@ -221,33 +258,34 @@ jobs:
 
       - name: Build APK via Gradle
         env:
+          FLAVOR: ${{ matrix.flavor }}
           BUILD_TYPE: ${{ github.event.inputs.build_type || 'release' }}
-          INPUT_ARM64: ${{ github.event.inputs.build_arm64 }}
-          INPUT_ARM32: ${{ github.event.inputs.build_arm32 }}
-          INPUT_UNIVERSAL: ${{ github.event.inputs.build_universal }}
         run: |
           BUILD_TYPE_CAP="$(tr '[:lower:]' '[:upper:]' <<< ${BUILD_TYPE:0:1})${BUILD_TYPE:1}"
 
-          TASKS=()
-          if [ "${{ github.event_name }}" = "push" ]; then
-            TASKS+=("assembleLatestArm64${BUILD_TYPE_CAP}" "assembleLatestArm32${BUILD_TYPE_CAP}")
-          else
-            if [ "$INPUT_ARM64" = "true" ] || [ -z "$INPUT_ARM64" ]; then
-              TASKS+=("assembleLatestArm64${BUILD_TYPE_CAP}")
-            fi
-            if [ "$INPUT_ARM32" = "true" ] || [ -z "$INPUT_ARM32" ]; then
-              TASKS+=("assembleLatestArm32${BUILD_TYPE_CAP}")
-            fi
-            if [ "$INPUT_UNIVERSAL" = "true" ]; then
-              TASKS+=("assembleLatestUniversal${BUILD_TYPE_CAP}")
-            fi
-            if [ ${#TASKS[@]} -eq 0 ]; then
-              TASKS+=("assembleLatestArm64${BUILD_TYPE_CAP}" "assembleLatestArm32${BUILD_TYPE_CAP}")
-            fi
-          fi
+          case "$FLAVOR" in
+            universal)
+              TASK="assembleLatestUniversal${BUILD_TYPE_CAP}"
+              ;;
+            arm64)
+              TASK="assembleLatestArm64${BUILD_TYPE_CAP}"
+              ;;
+            arm32)
+              TASK="assembleLatestArm32${BUILD_TYPE_CAP}"
+              ;;
+            x64)
+              TASK="assembleLatestX64${BUILD_TYPE_CAP}"
+              ;;
+            x86)
+              TASK="assembleLatestX86${BUILD_TYPE_CAP}"
+              ;;
+            *)
+              TASK="assembleLatestUniversal${BUILD_TYPE_CAP}"
+              ;;
+          esac
 
-          echo "Building with tasks: ./gradlew ${TASKS[@]}"
-          ./gradlew "${TASKS[@]}" --stacktrace --no-daemon
+          echo "Building $FLAVOR with task: ./gradlew $TASK"
+          ./gradlew $TASK --stacktrace --no-daemon
 
       - name: Verify, Sign and Prepare APKs
         run: |
@@ -274,6 +312,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: fomagramx-${{ github.event.inputs.build_type || 'release' }}-apks
+          name: fomagramx-${{ matrix.flavor }}-${{ github.event.inputs.build_type || 'release' }}-apk
           path: dist/*.apk
           retention-days: 14

@@ -1888,7 +1888,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onChatAvatarMenuClick () {
-    onMenuItemPressed(R.id.menu_btn_more, null);
+    onChatHeaderClick();
   }
 
   @Override
@@ -3574,7 +3574,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (id == R.id.menu_more) {
-      header.addMoreButton(menu, this);
+      if (!FomagramSettings.isIosChatStyle()) {
+        header.addMoreButton(menu, this);
+      }
     } else if (id == R.id.menu_gallery) {
       header.addButton(menu, R.id.menu_btn_gallery, R.drawable.baseline_image_24, getHeaderIconColorId(), this, Screen.dp(52f));
     } else if (id == R.id.menu_share) {

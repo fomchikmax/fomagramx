@@ -504,6 +504,9 @@ public class SettingsController extends ViewController<Void> implements
           view.setData(Lang.getString(R.string.ViewSourceCodeChangesSince, Lang.codeCreator(), previousVersionName, previousBuildInfo.getCommit()));
         } else if (itemId == R.id.btn_copyDebug) {
           view.setData(R.string.CopyReportDataInfo);
+        } else if (itemId == R.id.btn_checkUpdates) {
+          String abi = U.getPreferredAbiFlavor();
+          view.setData(abi != null ? abi.toUpperCase() : "Universal");
         } else if (itemId == R.id.btn_devices) {
           if (sessions == null) {
             view.setData(R.string.LoadingInformation);
@@ -679,7 +682,7 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, R.drawable.baseline_update_24, R.string.CheckForUpdates));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_checkUpdates, R.drawable.baseline_update_24, R.string.CheckForUpdates));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.InstallBetas, Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS)).setLongId(Settings.SETTING_FLAG_DOWNLOAD_BETAS));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));

@@ -53,7 +53,7 @@ public class ChatHeaderView extends ComplexHeaderView {
     });
     setUseDefaultClickListener(true);
     setBackgroundResource(ThemeDeprecated.headerSelector());
-    setInnerMargins(Screen.dp(56f), Screen.dp(49f));
+    setInnerMargins(Screen.dp(56f), FomagramSettings.isIosChatStyle() ? Screen.dp(56f) : Screen.dp(49f));
   }
 
   private CharSequence forcedSubtitle;
@@ -87,34 +87,6 @@ public class ChatHeaderView extends ComplexHeaderView {
         requestLayout();
       }
     }
-  }
-
-  @Override
-  public boolean onTouchEvent (MotionEvent e) {
-    if (callback == null) {
-      return false;
-    }
-    if (FomagramSettings.isIosChatStyle()) {
-      int action = e.getAction();
-      if (action == MotionEvent.ACTION_DOWN) {
-        touchDownX = e.getX();
-        touchDownY = e.getY();
-        return true;
-      } else if (action == MotionEvent.ACTION_UP) {
-        float dx = Math.abs(e.getX() - touchDownX);
-        float dy = Math.abs(e.getY() - touchDownY);
-        if (dx < Screen.dp(20f) && dy < Screen.dp(20f)) {
-          if (getAvatarReceiver().isInsideReceiver(e.getX(), e.getY())) {
-            callback.onChatAvatarMenuClick();
-            return true;
-          } else {
-            callback.onChatHeaderClick();
-            return true;
-          }
-        }
-      }
-    }
-    return super.onTouchEvent(e);
   }
 
   public void setChat (Tdlib tdlib, TdApi.Chat chat, @Nullable ThreadInfo messageThread) {

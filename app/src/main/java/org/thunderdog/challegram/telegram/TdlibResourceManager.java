@@ -19,6 +19,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.data.TD;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -126,6 +127,30 @@ public class TdlibResourceManager {
       } else {
         onDone.runWithData(new ArrayList<>());
       }
+    });
+  }
+
+  public void fetchRecentDocuments (RunnableData<List<TdApi.Message>> onDone, int limit) {
+    withChat(chatId -> {
+      if (chatId == 0) {
+        onDone.runWithData(null);
+        return;
+      }
+      tdlib.incrementJobReferenceCount();
+      tdlib.openChat(chatId, null, () -> {
+        tdlib.send(new TdApi.SearchChatMessages(chatId, null, "", null, 0, 0, limit, new TdApi.SearchMessagesFilterDocument()), (messages, error) -> {
+          if (messages != null && messages.messages != null) {
+            List<TdApi.Message> list = new ArrayList<>(messages.messages.length);
+            Collections.addAll(list, messages.messages);
+            onDone.runWithData(list);
+          } else {
+            Log.e("Unable to fetch update messages in @%s: %s", channelUsername, TD.toErrorString(error));
+            onDone.runWithData(null);
+          }
+          tdlib.closeChat(chatId, null, false);
+          tdlib.decrementJobReferenceCount();
+        });
+      });
     });
   }
 }

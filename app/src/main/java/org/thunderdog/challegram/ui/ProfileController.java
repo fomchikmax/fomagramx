@@ -661,6 +661,23 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       strings.append(R.string.OpenCloudChat);
     }
 
+    if (FomagramSettings.isIosChatStyle()) {
+      ids.append(R.id.btn_search);
+      strings.append(R.string.Search);
+
+      if (!user.isSupport && user.id != myUserId) {
+        ids.append(R.id.btn_mute);
+        strings.append(tdlib.chatNotificationsEnabled(chatId) ? R.string.Mute : R.string.Unmute);
+      }
+
+      if (tdlib.canReportChatSpam(chatId)) {
+        ids.append(R.id.btn_reportChat);
+        strings.append(R.string.Report);
+      }
+
+      tdlib.ui().addDeleteChatOptions(chatId, ids, strings, true, false);
+    }
+
     showMore(ids.get(), strings.get(), 0);
   }
 
@@ -695,6 +712,21 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       strings.append(R.string.Stats);
     }
 
+    if (FomagramSettings.isIosChatStyle()) {
+      ids.append(R.id.btn_search);
+      strings.append(R.string.Search);
+
+      if (!tdlib.isSelfChat(getChatId())) {
+        ids.append(R.id.btn_mute);
+        strings.append(tdlib.chatNotificationsEnabled(getChatId()) ? R.string.Mute : R.string.Unmute);
+      }
+
+      if (tdlib.canReportChatSpam(getChatId())) {
+        ids.append(R.id.btn_reportChat);
+        strings.append(R.string.Report);
+      }
+    }
+
     tdlib.ui().addDeleteChatOptions(getChatId(), ids, strings, false, true);
 
     if (ids.size() > 0) {
@@ -711,6 +743,24 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onMoreItemPressed (int id) {
     if (tdlib.ui().processLeaveButton(this, null, getChatId(), id, null)) {
+      return;
+    }
+    if (id == R.id.btn_mute) {
+      tdlib.ui().toggleMute(this, getChatId(), false, null);
+      return;
+    }
+    if (id == R.id.btn_reportChat) {
+      TdlibUi.reportChat(this, getChatId(), null, null, null, true);
+      return;
+    }
+    if (id == R.id.btn_search) {
+      navigateBack();
+      ViewController<?> top = getNavigationController() != null ? getNavigationController().findCurrentController() : null;
+      if (top instanceof MessagesController) {
+        ((MessagesController) top).openSearchMode();
+      } else {
+        tdlib.ui().openChat(this, getChatId(), new TdlibUi.ChatOpenParameters().searchQuery(""));
+      }
       return;
     }
     switch (mode) {

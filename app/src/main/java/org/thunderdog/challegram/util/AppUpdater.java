@@ -328,29 +328,30 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     setState(State.CHECKING);
     Tdlib tdlib = context.hasTdlib() ? context.currentTdlib() : null;
     if (tdlib == null || tdlib.context().inRecoveryMode() || !tdlib.isAuthorized()) {
-      onUpdateUnavailable();
+      onUpdateUnavailable("У вас и так последняя версия");
       return;
     }
-    tdlib.findUpdateFile(updateFile -> {
+    tdlib.findUpdateFileResult(result -> {
       RunnableBool act = updateFileLoadedAndExists -> tdlib.ui().post(() -> {
-        if (updateFile != null) {
+        if (result != null && result.updateFile != null) {
           this.telegramChannelTdlib = tdlib;
-          this.telegramChannelFile = updateFile;
-          TdApi.File file = updateFile.document.document;
+          this.telegramChannelFile = result.updateFile;
+          TdApi.File file = result.updateFile.document.document;
           tdlib.listeners().addFileListener(file.id, this);
           onUpdateAvailable(FlowType.TELEGRAM_CHANNEL,
             file.local.downloadedSize,
             file.expectedSize,
-            updateFile.version,
-            updateFile.commit,
-            updateFileLoadedAndExists
+            result.updateFile.version,
+            result.updateFile.commit,
+            updateFileLoadedAndExists,
+            result.message
           );
         } else {
-          onUpdateUnavailable();
+          onUpdateUnavailable(result != null ? result.message : "У вас и так последняя версия");
         }
       });
-      if (updateFile != null) {
-        tdlib.files().isFileLoadedAndExists(updateFile.document.document, act);
+      if (result != null && result.updateFile != null) {
+        tdlib.files().isFileLoadedAndExists(result.updateFile.document.document, act);
       } else {
         act.runWithBool(false);
       }
@@ -438,6 +439,10 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
   }
 
   private void onUpdateAvailable (@FlowType int flowType, long bytesDownloaded, long totalBytesToDownload, @Nullable String displayVersion, @Nullable String commit, boolean readyToInstall) {
+    onUpdateAvailable(flowType, bytesDownloaded, totalBytesToDownload, displayVersion, commit, readyToInstall, null);
+  }
+
+  private void onUpdateAvailable (@FlowType int flowType, long bytesDownloaded, long totalBytesToDownload, @Nullable String displayVersion, @Nullable String commit, boolean readyToInstall, @Nullable String toastMessage) {
     this.flowType = flowType;
     this.bytesDownloaded = bytesDownloaded;
     this.totalBytesToDownload = totalBytesToDownload;
@@ -445,7 +450,11 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     this.commit = commit;
     if (isManualCheck) {
       isManualCheck = false;
-      UI.showCustomToast("Доступно обновление: " + (!StringUtils.isEmpty(displayVersion) ? displayVersion : "") + "!", Toast.LENGTH_SHORT, 0);
+      if (!StringUtils.isEmpty(toastMessage)) {
+        UI.showCustomToast(toastMessage, Toast.LENGTH_SHORT, 0);
+      } else {
+        UI.showCustomToast("Доступна новая версия! «" + (!StringUtils.isEmpty(displayVersion) ? displayVersion : "") + "»", Toast.LENGTH_SHORT, 0);
+      }
     }
     if (readyToInstall) {
       setState(State.READY_TO_INSTALL);
@@ -535,14 +544,17 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
   }
 
   private void onUpdateUnavailable () {
+    onUpdateUnavailable(null);
+  }
+
+  private void onUpdateUnavailable (@Nullable String toastMessage) {
     setState(State.NONE);
     if (isManualCheck) {
       isManualCheck = false;
-      boolean allowBeta = Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS);
-      if (!allowBeta) {
-        UI.showCustomToast("У вас установлена последняя версия. Включите бета-версии, если хотите получать тестовые сборки.", Toast.LENGTH_LONG, 0);
+      if (!StringUtils.isEmpty(toastMessage)) {
+        UI.showCustomToast(toastMessage, Toast.LENGTH_LONG, 0);
       } else {
-        UI.showCustomToast("У вас установлена последняя версия (" + BuildConfig.ORIGINAL_VERSION_NAME + ")", Toast.LENGTH_SHORT, 0);
+        UI.showCustomToast("У вас и так последняя версия", Toast.LENGTH_SHORT, 0);
       }
     }
   }

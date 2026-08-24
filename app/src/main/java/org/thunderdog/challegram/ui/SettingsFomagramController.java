@@ -141,7 +141,7 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_fomagram_chat_ios_style, 0, "Айось (Стиль iOS)"));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, "Перемещает аватарку чата в правый верхний угол (нажатие на неё открывает меню чата), а имя и статус центрируются."));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, "Перемещает аватарку чата в правый угол, убирает три точки из чата (все опции перенесены в профиль), а заголовок и статус центрируются."));
 
     adapter.setItems(items, false);
     recyclerView.setAdapter(adapter);

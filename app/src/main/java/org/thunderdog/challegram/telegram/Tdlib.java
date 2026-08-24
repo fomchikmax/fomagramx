@@ -10654,83 +10654,238 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public void findUpdateFile (@NonNull RunnableData<UpdateFileInfo> onDone) {
-    final String abiFlavor = U.getPreferredAbiFlavor();
-    if (abiFlavor == null) {
-      onDone.runWithData(null);
-      return;
+  public static class UpdateCheckResult {
+    public final UpdateFileInfo updateFile;
+    public final String message;
+
+    public UpdateCheckResult (@Nullable UpdateFileInfo updateFile, @NonNull String message) {
+      this.updateFile = updateFile;
+      this.message = message;
     }
-    final String query = "#apk";
-    clientHolder().updates.findMatchingResource(message -> {
-      if (message != null && Td.isDocument(message.content)) {
-        TdApi.Document document = ((TdApi.MessageDocument) message.content).document;
-        TdApi.FormattedText caption = ((TdApi.MessageDocument) message.content).caption;
-        boolean ok = false;
-        int buildNo = 0;
+  }
+
+  private static class CandidateApk {
+    final TdApi.Document document;
+    final int buildNo;
+    final String version;
+    final String commit;
+    final String abi;
+    final boolean isBeta;
+
+    CandidateApk (TdApi.Document document, int buildNo, String version, String commit, String abi, boolean isBeta) {
+      this.document = document;
+      this.buildNo = buildNo;
+      this.version = version;
+      this.commit = commit;
+      this.abi = abi;
+      this.isBeta = isBeta;
+    }
+  }
+
+  public void findUpdateFile (@NonNull RunnableData<UpdateFileInfo> onDone) {
+    findUpdateFileResult(result -> onDone.runWithData(result != null ? result.updateFile : null));
+  }
+
+  public void findUpdateFileResult (@NonNull RunnableData<UpdateCheckResult> onDone) {
+    String deviceAbi = U.getPreferredAbiFlavor();
+    if (deviceAbi == null) {
+      deviceAbi = "universal";
+    }
+    final String currentDeviceAbi = deviceAbi;
+    final int currentBuild = BuildConfig.ORIGINAL_VERSION_CODE;
+    final boolean allowBeta = Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS);
+
+    clientHolder().updates.fetchRecentDocuments(messages -> {
+      if (messages == null || messages.isEmpty()) {
+        onDone.runWithData(new UpdateCheckResult(null, "У вас и так последняя версия"));
+        return;
+      }
+
+      List<CandidateApk> candidates = new ArrayList<>();
+      Pattern vPattern = Pattern.compile("(?i)Version:[\\s*`]*([0-9a-zA-Z._-]+)", Pattern.CASE_INSENSITIVE);
+      Pattern cPattern = Pattern.compile("(?<=Commit:)\\s*([a-zA-Z0-9]+)", Pattern.CASE_INSENSITIVE);
+
+      for (TdApi.Message msg : messages) {
+        if (!Td.isDocument(msg.content)) continue;
+        TdApi.Document doc = ((TdApi.MessageDocument) msg.content).document;
+        TdApi.FormattedText cap = ((TdApi.MessageDocument) msg.content).caption;
+
+        String fn = doc.fileName != null ? doc.fileName : "";
+        String ct = cap != null && cap.text != null ? cap.text : "";
+        String fnLower = fn.toLowerCase();
+        String ctLower = ct.toLowerCase();
+
+        String abi = "universal";
+        if (ctLower.contains("#arm64") || fnLower.contains("arm64")) {
+          abi = "arm64";
+        } else if (ctLower.contains("#arm32") || ctLower.contains("#arm7") || ctLower.contains("#armeabi") || fnLower.contains("arm32") || fnLower.contains("armeabi") || fnLower.contains("arm-v7a")) {
+          abi = "arm32";
+        } else if (ctLower.contains("#universal") || fnLower.contains("universal")) {
+          abi = "universal";
+        } else if (ctLower.contains("#x64") || ctLower.contains("#x86_64") || fnLower.contains("x86_64") || fnLower.contains("x64")) {
+          abi = "x64";
+        } else if (ctLower.contains("#x86") || fnLower.contains("x86")) {
+          abi = "x86";
+        }
+
+        boolean isBeta = ctLower.contains("#beta");
+
         String version = null;
+        int buildNo = 0;
+
+        Matcher vMatcher = vPattern.matcher(ct);
+        if (vMatcher.find()) {
+          String raw = vMatcher.group(1);
+          if (raw != null) {
+            version = raw.replaceAll("[`*]", "").trim();
+            String clean = version;
+            int dash = clean.indexOf('-');
+            if (dash != -1) {
+              clean = clean.substring(0, dash);
+            }
+            int lastDot = clean.lastIndexOf('.');
+            if (lastDot != -1 && lastDot < clean.length() - 1) {
+              buildNo = StringUtils.parseInt(clean.substring(lastDot + 1));
+            }
+          }
+        }
+
+        if (buildNo == 0 || version == null) {
+          String prefix = fn.startsWith("Fomagram-X-") ? "Fomagram-X-" : (fn.startsWith("Telegram-X-") ? "Telegram-X-" : null);
+          if (prefix != null) {
+            String vPart = fn.substring(prefix.length());
+            if (vPart.endsWith(".apk")) {
+              vPart = vPart.substring(0, vPart.length() - 4);
+            }
+            version = vPart;
+            String clean = vPart;
+            int dash = clean.indexOf('-');
+            if (dash != -1) {
+              clean = clean.substring(0, dash);
+            }
+            int lastDot = clean.lastIndexOf('.');
+            if (lastDot != -1 && lastDot < clean.length() - 1) {
+              buildNo = StringUtils.parseInt(clean.substring(lastDot + 1));
+            }
+          }
+        }
+
         String commit = null;
-        String fileName = document.fileName != null ? document.fileName : "";
-        String prefix = fileName.startsWith("Fomagram-X-") ? "Fomagram-X-" : (fileName.startsWith("Telegram-X-") ? "Telegram-X-" : null);
-        if (prefix != null) {
-          int i = fileName.indexOf('-', prefix.length());
-          version = fileName.substring(prefix.length(), i == -1 ? (fileName.endsWith(".apk") ? fileName.length() - 4 : fileName.length()) : i);
-          if (version.matches("^[0-9]+(\\.[0-9]+)+$")) {
-            buildNo = StringUtils.parseInt(version.substring(version.lastIndexOf('.') + 1));
-            if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE) {
-              ok = true;
-            }
+        Matcher cMatcher = cPattern.matcher(ct);
+        if (cMatcher.find()) {
+          commit = cMatcher.group(1).trim();
+          if (StringUtils.isEmpty(commit)) {
+            commit = null;
           }
         }
-        if (!ok && caption != null && !StringUtils.isEmpty(caption.text)) {
-          Pattern vPattern = Pattern.compile("(?i)Version:\\s*`?([0-9]+(?:\\.[0-9]+)+)", Pattern.CASE_INSENSITIVE);
-          Matcher vMatcher = vPattern.matcher(caption.text);
-          if (vMatcher.find()) {
-            version = vMatcher.group(1);
-            buildNo = StringUtils.parseInt(version.substring(version.lastIndexOf('.') + 1));
-            if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE) {
-              ok = true;
-            }
-          }
-        }
-        //noinspection UnsafeOptInUsageError
-        if (!Td.isEmpty(caption)) {
-          Pattern pattern = Pattern.compile("(?<=Commit:)\\s*([a-zA-Z0-9]+)", Pattern.CASE_INSENSITIVE);
-          Matcher matcher = pattern.matcher(caption.text);
-          if (matcher.find()) {
-            commit = matcher.group(1);
-            if (StringUtils.isEmpty(commit)) {
-              commit = null;
-            }
-          }
-        }
-        onDone.runWithData(ok ? new UpdateFileInfo(document, buildNo, version, commit) : null);
-      } else {
-        onDone.runWithData(null);
-      }
-    }, query, BuildConfig.COMMIT_DATE, msg -> {
-      if (!Td.isDocument(msg.content)) return false;
-      TdApi.Document doc = ((TdApi.MessageDocument) msg.content).document;
-      TdApi.FormattedText cap = ((TdApi.MessageDocument) msg.content).caption;
-      String fn = doc.fileName != null ? doc.fileName.toLowerCase() : "";
-      String ct = cap != null && cap.text != null ? cap.text.toLowerCase() : "";
-      
-      boolean isUniversal = fn.contains("universal") || ct.contains("#universal");
-      boolean isArm64 = fn.contains("arm64") || ct.contains("#arm64");
-      boolean isArm32 = fn.contains("arm32") || fn.contains("arm7") || fn.contains("armeabi") || ct.contains("#arm32") || ct.contains("#arm7");
 
-      boolean isBeta = ct.contains("#beta");
-      boolean allowBeta = Settings.instance().getNewSetting(Settings.SETTING_FLAG_DOWNLOAD_BETAS);
-      if (isBeta && !allowBeta) {
-        return false;
+        if (buildNo > 0 && version != null) {
+          candidates.add(new CandidateApk(doc, buildNo, version, commit, abi, isBeta));
+        }
       }
 
-      if ("arm64".equals(abiFlavor)) {
-        return isArm64 || isUniversal;
-      } else if ("arm32".equals(abiFlavor)) {
-        return isArm32 || isUniversal;
+      if (candidates.isEmpty()) {
+        onDone.runWithData(new UpdateCheckResult(null, "У вас и так последняя версия"));
+        return;
       }
-      return isUniversal || fn.contains(abiFlavor) || ct.contains("#" + abiFlavor);
-    });
+
+      // Filter installable candidates for this device
+      CandidateApk bestMatching = null;
+      CandidateApk bestUniversal = null;
+
+      for (CandidateApk c : candidates) {
+        if (c.buildNo <= currentBuild) continue;
+        if (c.isBeta && !allowBeta) continue;
+
+        boolean isDirectMatch = c.abi.equals(currentDeviceAbi);
+        boolean isUni = c.abi.equals("universal");
+
+        if (isDirectMatch) {
+          if (bestMatching == null || c.buildNo > bestMatching.buildNo) {
+            bestMatching = c;
+          }
+        } else if (isUni) {
+          if (bestUniversal == null || c.buildNo > bestUniversal.buildNo) {
+            bestUniversal = c;
+          }
+        }
+      }
+
+      CandidateApk chosen = null;
+      if (bestMatching != null && bestUniversal != null) {
+        if (bestMatching.buildNo >= bestUniversal.buildNo) {
+          chosen = bestMatching;
+        } else {
+          chosen = bestUniversal;
+        }
+      } else if (bestMatching != null) {
+        chosen = bestMatching;
+      } else if (bestUniversal != null) {
+        chosen = bestUniversal;
+      }
+
+      if (chosen != null) {
+        UpdateFileInfo fileInfo = new UpdateFileInfo(chosen.document, chosen.buildNo, chosen.version, chosen.commit);
+        String msg = "Доступна новая версия! «" + chosen.version + "»";
+        onDone.runWithData(new UpdateCheckResult(fileInfo, msg));
+        return;
+      }
+
+      // No installable update. Check reasons for informational messages:
+      // 1. Is there a newer beta version?
+      if (!allowBeta) {
+        CandidateApk bestBeta = null;
+        for (CandidateApk c : candidates) {
+          if (c.buildNo > currentBuild && c.isBeta) {
+            boolean isCompatible = c.abi.equals(currentDeviceAbi) || c.abi.equals("universal");
+            if (isCompatible) {
+              if (bestBeta == null || c.buildNo > bestBeta.buildNo) {
+                bestBeta = c;
+              }
+            }
+          }
+        }
+        if (bestBeta != null) {
+          String msg = "У вас последняя версия, но есть бета версия «" + bestBeta.version + "»";
+          onDone.runWithData(new UpdateCheckResult(null, msg));
+          return;
+        }
+      }
+
+      // 2. Is there a newer version for another ABI?
+      if ("arm32".equals(currentDeviceAbi)) {
+        CandidateApk arm64Apk = null;
+        for (CandidateApk c : candidates) {
+          if (c.buildNo > currentBuild && "arm64".equals(c.abi) && (!c.isBeta || allowBeta)) {
+            if (arm64Apk == null || c.buildNo > arm64Apk.buildNo) {
+              arm64Apk = c;
+            }
+          }
+        }
+        if (arm64Apk != null) {
+          String msg = "У вас последняя версия для ARM32. Но для ARM64 доступна версия «" + arm64Apk.version + "»";
+          onDone.runWithData(new UpdateCheckResult(null, msg));
+          return;
+        }
+      } else if ("arm64".equals(currentDeviceAbi)) {
+        CandidateApk arm32Apk = null;
+        for (CandidateApk c : candidates) {
+          if (c.buildNo > currentBuild && "arm32".equals(c.abi) && (!c.isBeta || allowBeta)) {
+            if (arm32Apk == null || c.buildNo > arm32Apk.buildNo) {
+              arm32Apk = c;
+            }
+          }
+        }
+        if (arm32Apk != null) {
+          String msg = "У вас последняя версия для ARM64. Но для ARM32 доступна версия «" + arm32Apk.version + "»";
+          onDone.runWithData(new UpdateCheckResult(null, msg));
+          return;
+        }
+      }
+
+      // 3. Fallback: already latest version
+      onDone.runWithData(new UpdateCheckResult(null, "У вас и так последняя версия"));
+    }, 30);
   }
 
   public <T extends Settings.CloudSetting> void fetchCloudSettings (@NonNull RunnableData<List<T>> callback, String requiredHashtag, @NonNull Future<T> currentSettingProvider, @NonNull Future<T> builtinItemProvider, @NonNull WrapperProvider<T, TdApi.Message> instanceProvider) {

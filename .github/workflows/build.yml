@@ -1,9 +1,6 @@
 name: Build FomagramX (Telegram X)
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       build_arm64:
@@ -40,18 +37,14 @@ jobs:
       - id: set-flavors
         run: |
           FLAVORS=()
-          if [ "${{ github.event_name }}" = "push" ]; then
-            FLAVORS+=("arm64" "arm32")
-          else
-            if [ "${{ github.event.inputs.build_arm64 }}" = "true" ]; then
-              FLAVORS+=("arm64")
-            fi
-            if [ "${{ github.event.inputs.build_arm32 }}" = "true" ]; then
-              FLAVORS+=("arm32")
-            fi
-            if [ "${{ github.event.inputs.build_universal }}" = "true" ]; then
-              FLAVORS+=("universal")
-            fi
+          if [ "${{ github.event.inputs.build_arm64 }}" = "true" ]; then
+            FLAVORS+=("arm64")
+          fi
+          if [ "${{ github.event.inputs.build_arm32 }}" = "true" ]; then
+            FLAVORS+=("arm32")
+          fi
+          if [ "${{ github.event.inputs.build_universal }}" = "true" ]; then
+            FLAVORS+=("universal")
           fi
 
           if [ ${#FLAVORS[@]} -eq 0 ]; then

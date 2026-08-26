@@ -424,7 +424,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   @TdlibThread
-  void onUpdateUser (TdApi.UpdateUser update) {
+  public void onUpdateUser (TdApi.UpdateUser update) {
     final boolean statusChanged;
     final boolean hadUser;
     final boolean isContactChanged;

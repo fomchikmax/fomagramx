@@ -47,21 +47,43 @@ public final class FomagramSettings {
   }
 
   public static boolean hasFakePhone () {
-    String number = Settings.instance().getString(KEY_FAKE_PHONE_NUMBER, "");
+    return hasFakePhone(0);
+  }
+
+  public static boolean hasFakePhone (long userId) {
+    String number = getFakePhoneNumber(userId);
     return !StringUtils.isEmpty(number);
   }
 
   public static String getFakePhoneCountry () {
+    return getFakePhoneCountry(0);
+  }
+
+  public static String getFakePhoneCountry (long userId) {
+    if (userId != 0) {
+      return Settings.instance().getString(KEY_FAKE_PHONE_COUNTRY + "_" + userId, Settings.instance().getString(KEY_FAKE_PHONE_COUNTRY, ""));
+    }
     return Settings.instance().getString(KEY_FAKE_PHONE_COUNTRY, "");
   }
 
   public static String getFakePhoneNumber () {
+    return getFakePhoneNumber(0);
+  }
+
+  public static String getFakePhoneNumber (long userId) {
+    if (userId != 0) {
+      return Settings.instance().getString(KEY_FAKE_PHONE_NUMBER + "_" + userId, Settings.instance().getString(KEY_FAKE_PHONE_NUMBER, ""));
+    }
     return Settings.instance().getString(KEY_FAKE_PHONE_NUMBER, "");
   }
 
   public static String getFakePhoneFull () {
-    String country = getFakePhoneCountry().replaceAll("[^0-9]", "");
-    String number = getFakePhoneNumber().replaceAll("[^0-9]", "");
+    return getFakePhoneFull(0);
+  }
+
+  public static String getFakePhoneFull (long userId) {
+    String country = getFakePhoneCountry(userId).replaceAll("[^0-9]", "");
+    String number = getFakePhoneNumber(userId).replaceAll("[^0-9]", "");
     if (StringUtils.isEmpty(number)) {
       return "";
     }
@@ -69,12 +91,24 @@ public final class FomagramSettings {
   }
 
   public static void setFakePhone (String country, String number) {
+    setFakePhone(0, country, number);
+  }
+
+  public static void setFakePhone (long userId, String country, String number) {
+    if (userId != 0) {
+      Settings.instance().putString(KEY_FAKE_PHONE_COUNTRY + "_" + userId, country != null ? country.trim() : "");
+      Settings.instance().putString(KEY_FAKE_PHONE_NUMBER + "_" + userId, number != null ? number.trim() : "");
+    }
     Settings.instance().putString(KEY_FAKE_PHONE_COUNTRY, country != null ? country.trim() : "");
     Settings.instance().putString(KEY_FAKE_PHONE_NUMBER, number != null ? number.trim() : "");
   }
 
   public static void clearFakePhone () {
-    setFakePhone("", "");
+    clearFakePhone(0);
+  }
+
+  public static void clearFakePhone (long userId) {
+    setFakePhone(userId, "", "");
   }
 
   // --- НИКНЕЙМ ---
@@ -112,14 +146,29 @@ public final class FomagramSettings {
   }
 
   public static boolean hasFakeUsername () {
-    return !StringUtils.isEmpty(getFakeUsername());
+    return hasFakeUsername(0);
+  }
+
+  public static boolean hasFakeUsername (long userId) {
+    return !StringUtils.isEmpty(getFakeUsername(userId));
   }
 
   public static String getFakeUsername () {
+    return getFakeUsername(0);
+  }
+
+  public static String getFakeUsername (long userId) {
+    if (userId != 0) {
+      return Settings.instance().getString(KEY_FAKE_USERNAME + "_" + userId, Settings.instance().getString(KEY_FAKE_USERNAME, ""));
+    }
     return Settings.instance().getString(KEY_FAKE_USERNAME, "");
   }
 
   public static void setFakeUsername (String fakeUsername) {
+    setFakeUsername(0, fakeUsername);
+  }
+
+  public static void setFakeUsername (long userId, String fakeUsername) {
     if (fakeUsername != null) {
       fakeUsername = fakeUsername.trim();
       if (fakeUsername.startsWith("@")) {
@@ -128,11 +177,73 @@ public final class FomagramSettings {
     } else {
       fakeUsername = "";
     }
+    if (userId != 0) {
+      Settings.instance().putString(KEY_FAKE_USERNAME + "_" + userId, fakeUsername);
+    }
     Settings.instance().putString(KEY_FAKE_USERNAME, fakeUsername);
   }
 
   public static void clearFakeUsername () {
-    setFakeUsername("");
+    clearFakeUsername(0);
+  }
+
+  public static void clearFakeUsername (long userId) {
+    setFakeUsername(userId, "");
+  }
+
+  // --- ЛОКАЛЬНЫЙ ПРЕМИУМ И СТАТУС ЭМОДЗИ ---
+  private static final String KEY_LOCAL_PREMIUM = "fomagram_local_premium";
+  private static final String KEY_LOCAL_EMOJI_STATUS = "fomagram_local_emoji_status";
+  private static final String KEY_LOCAL_EMOJI_STATUS_ID = "fomagram_local_emoji_status_id";
+
+  public static boolean isLocalPremium () {
+    return isLocalPremium(0);
+  }
+
+  public static boolean isLocalPremium (long userId) {
+    if (userId != 0) {
+      return Settings.instance().getBoolean(KEY_LOCAL_PREMIUM + "_" + userId, Settings.instance().getBoolean(KEY_LOCAL_PREMIUM, false));
+    }
+    return Settings.instance().getBoolean(KEY_LOCAL_PREMIUM, false);
+  }
+
+  public static void setLocalPremium (long userId, boolean value) {
+    if (userId != 0) {
+      Settings.instance().putBoolean(KEY_LOCAL_PREMIUM + "_" + userId, value);
+    }
+    Settings.instance().putBoolean(KEY_LOCAL_PREMIUM, value);
+  }
+
+  public static boolean isLocalEmojiStatus () {
+    return isLocalEmojiStatus(0);
+  }
+
+  public static boolean isLocalEmojiStatus (long userId) {
+    if (userId != 0) {
+      return Settings.instance().getBoolean(KEY_LOCAL_EMOJI_STATUS + "_" + userId, Settings.instance().getBoolean(KEY_LOCAL_EMOJI_STATUS, false));
+    }
+    return Settings.instance().getBoolean(KEY_LOCAL_EMOJI_STATUS, false);
+  }
+
+  public static void setLocalEmojiStatus (long userId, boolean value) {
+    if (userId != 0) {
+      Settings.instance().putBoolean(KEY_LOCAL_EMOJI_STATUS + "_" + userId, value);
+    }
+    Settings.instance().putBoolean(KEY_LOCAL_EMOJI_STATUS, value);
+  }
+
+  public static long getLocalEmojiStatusCustomEmojiId (long userId) {
+    if (userId != 0) {
+      return Settings.instance().getLong(KEY_LOCAL_EMOJI_STATUS_ID + "_" + userId, Settings.instance().getLong(KEY_LOCAL_EMOJI_STATUS_ID, 0L));
+    }
+    return Settings.instance().getLong(KEY_LOCAL_EMOJI_STATUS_ID, 0L);
+  }
+
+  public static void setLocalEmojiStatusCustomEmojiId (long userId, long emojiId) {
+    if (userId != 0) {
+      Settings.instance().putLong(KEY_LOCAL_EMOJI_STATUS_ID + "_" + userId, emojiId);
+    }
+    Settings.instance().putLong(KEY_LOCAL_EMOJI_STATUS_ID, emojiId);
   }
 
   public static boolean isHideUsernameView (boolean isOtherUser) {

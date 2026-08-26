@@ -138,6 +138,14 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     emojiCustomListController = new EmojiStatusListController(context, tdlib) {
       @Override
       public void onSetEmojiStatusFromPreview (StickerSmallView view, View clickView, TGStickerObj sticker, long emojiId, long expirationDate) {
+        if (org.thunderdog.challegram.unsorted.FomagramSettings.isLocalEmojiStatus(tdlib.myUserId())) {
+          org.thunderdog.challegram.unsorted.FomagramSettings.setLocalEmojiStatusCustomEmojiId(tdlib.myUserId(), emojiId);
+          TdApi.User myUser = tdlib.cache().myUser();
+          if (myUser != null) {
+            myUser.emojiStatus = new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate);
+            tdlib.cache().onUpdateUser(new TdApi.UpdateUser(myUser));
+          }
+        }
         context.replaceReactionPreviewCords(parent.animationDelegate.getDestX(), parent.animationDelegate.getDestY());
         parent.hidePopupWindow(true);
         scheduleClickAnimation(sticker.getCustomEmojiId());
@@ -193,7 +201,17 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
 
   @Override
   public boolean onSetEmojiStatus (@Nullable View view, TGStickerObj sticker, TdApi.EmojiStatus emojiStatus) {
-    tdlib.client().send(new TdApi.SetEmojiStatus(emojiStatus), tdlib.okHandler());
+    if (org.thunderdog.challegram.unsorted.FomagramSettings.isLocalEmojiStatus(tdlib.myUserId())) {
+      long customEmojiId = sticker != null ? sticker.getCustomEmojiId() : (emojiStatus != null && emojiStatus.type instanceof TdApi.EmojiStatusTypeCustomEmoji ? ((TdApi.EmojiStatusTypeCustomEmoji) emojiStatus.type).customEmojiId : 0);
+      org.thunderdog.challegram.unsorted.FomagramSettings.setLocalEmojiStatusCustomEmojiId(tdlib.myUserId(), customEmojiId);
+      TdApi.User myUser = tdlib.cache().myUser();
+      if (myUser != null) {
+        myUser.emojiStatus = emojiStatus;
+        tdlib.cache().onUpdateUser(new TdApi.UpdateUser(myUser));
+      }
+    } else {
+      tdlib.client().send(new TdApi.SetEmojiStatus(emojiStatus), tdlib.okHandler());
+    }
     parent.hidePopupWindow(true);
     if (view == null) return true;
 

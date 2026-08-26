@@ -8,7 +8,7 @@ on:
         type: boolean
         default: true
       build_arm32:
-        description: 'Собрать ARM32 (armeabi-v7a)'
+        description: 'Собрать Lollipop ARM32 (Android 5.0+, armeabi-v7a)'
         type: boolean
         default: true
       build_universal:
@@ -269,7 +269,7 @@ jobs:
               TASK="assembleLatestArm64${BUILD_TYPE_CAP}"
               ;;
             arm32)
-              TASK="assembleLatestArm32${BUILD_TYPE_CAP}"
+              TASK="assembleLollipopArm32${BUILD_TYPE_CAP}"
               ;;
             x64)
               TASK="assembleLatestX64${BUILD_TYPE_CAP}"
@@ -301,15 +301,19 @@ jobs:
             echo "Signature verification for $apk:"
             $APKSIGNER verify -v "$apk" || true
 
-            BASE_NAME=$(basename "$apk")
-            cp "$apk" "dist/${BASE_NAME}"
-            echo "Copied $apk -> dist/${BASE_NAME}"
+            if [ "${{ matrix.flavor }}" = "arm32" ]; then
+              TARGET_NAME="fomagramx-lollipop-arm32-${BUILD_TYPE}.apk"
+            else
+              TARGET_NAME="fomagramx-${{ matrix.flavor }}-${BUILD_TYPE}.apk"
+            fi
+            cp "$apk" "dist/${TARGET_NAME}"
+            echo "Copied $apk -> dist/${TARGET_NAME}"
           done
 
       - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: fomagramx-${{ matrix.flavor }}-${{ github.event.inputs.build_type || 'release' }}-apk
+          name: fomagramx-${{ matrix.flavor == 'arm32' && 'lollipop-arm32' || matrix.flavor }}-${{ github.event.inputs.build_type || 'release' }}-apk
           path: dist/*.apk
           retention-days: 14

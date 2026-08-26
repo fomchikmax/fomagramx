@@ -70,7 +70,7 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
         } else if (itemId == R.id.btn_fomagram_mask_all_phones) {
           view.getToggler().setRadioEnabled(FomagramSettings.isMaskAllPhones(), isUpdate);
         } else if (itemId == R.id.btn_fomagram_phone_fake) {
-          view.setData(FomagramSettings.hasFakePhone() ? FomagramSettings.getFakePhoneFull() : "Выкл");
+          view.setData(FomagramSettings.hasFakePhone(tdlib.myUserId()) ? FomagramSettings.getFakePhoneFull(tdlib.myUserId()) : "Выкл");
         } else if (itemId == R.id.btn_fomagram_username_mask) {
           view.setData(getUsernameMaskTitle(FomagramSettings.getUsernameMode()));
         } else if (itemId == R.id.btn_fomagram_mask_all_usernames) {
@@ -78,7 +78,11 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
         } else if (itemId == R.id.btn_fomagram_mask_channels_and_groups) {
           view.getToggler().setRadioEnabled(FomagramSettings.isMaskChannelsAndGroups(), isUpdate);
         } else if (itemId == R.id.btn_fomagram_username_fake) {
-          view.setData(FomagramSettings.hasFakeUsername() ? "@" + FomagramSettings.getFakeUsername() : "Выкл");
+          view.setData(FomagramSettings.hasFakeUsername(tdlib.myUserId()) ? "@" + FomagramSettings.getFakeUsername(tdlib.myUserId()) : "Выкл");
+        } else if (itemId == R.id.btn_fomagram_local_premium) {
+          view.getToggler().setRadioEnabled(FomagramSettings.isLocalPremium(tdlib.myUserId()), isUpdate);
+        } else if (itemId == R.id.btn_fomagram_local_emoji_status) {
+          view.getToggler().setRadioEnabled(FomagramSettings.isLocalEmojiStatus(tdlib.myUserId()), isUpdate);
         } else if (itemId == R.id.btn_fomagram_drawer_hide_contacts) {
           view.getToggler().setRadioEnabled(FomagramSettings.isDrawerHideContacts(), isUpdate);
         } else if (itemId == R.id.btn_fomagram_drawer_hide_calls) {
@@ -99,6 +103,15 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
 
     List<ListItem> items = new ArrayList<>();
 
+    // Секция: Премиум
+    items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, "Премиум"));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_fomagram_local_premium, 0, "Локальный Premium"));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_fomagram_local_emoji_status, 0, "Локальный статус эмодзи"));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, "Включает премиум-функции локально для текущего аккаунта. Локальный статус эмодзи сохраняется в клиенте и отображается везде без отправки на сервер."));
+
     // Секция: Телефон
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, "Телефон"));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -108,7 +121,7 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_fomagram_phone_fake, 0, "Фейковый телефон"));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, "Маскирует или скрывает номер телефона. Фейковый номер заменяет отображаемый номер на указанный вами."));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, "Маскирует или скрывает номер телефона. Фейковый номер заменяет отображаемый номер на указанный вами (для текущего аккаунта)."));
 
     // Секция: Никнейм
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, "Никнейм"));
@@ -121,7 +134,7 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_fomagram_username_fake, 0, "Фейковый ник"));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, "Маскирует или скрывает юзернейм в профиле. Фейковый ник заменяет ваш ник на кастомный."));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, "Маскирует или скрывает юзернейм в профиле. Фейковый ник заменяет ваш ник на кастомный (для текущего аккаунта)."));
 
     // Секция: Боковое меню
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, "Боковое меню"));
@@ -261,6 +274,21 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
       showRestartBanner();
     } else if (viewId == R.id.btn_fomagram_username_fake) {
       showFakeUsernameDialog();
+    } else if (viewId == R.id.btn_fomagram_local_premium) {
+      FomagramSettings.setLocalPremium(tdlib.myUserId(), adapter.toggleView(v));
+      showRestartBanner();
+      TdApi.User myUser = tdlib.cache().myUser();
+      if (myUser != null) {
+        myUser.isPremium = FomagramSettings.isLocalPremium(tdlib.myUserId());
+        tdlib.cache().onUpdateUser(new TdApi.UpdateUser(myUser));
+      }
+    } else if (viewId == R.id.btn_fomagram_local_emoji_status) {
+      FomagramSettings.setLocalEmojiStatus(tdlib.myUserId(), adapter.toggleView(v));
+      showRestartBanner();
+      TdApi.User myUser = tdlib.cache().myUser();
+      if (myUser != null) {
+        tdlib.cache().onUpdateUser(new TdApi.UpdateUser(myUser));
+      }
     } else if (viewId == R.id.btn_fomagram_drawer_hide_contacts) {
       FomagramSettings.setDrawerHideContacts(adapter.toggleView(v));
       showRestartBanner();
@@ -329,6 +357,7 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
   }
 
   private void showFakePhoneDialog () {
+    long userId = tdlib.myUserId();
     LinearLayout layout = new LinearLayout(context);
     layout.setOrientation(LinearLayout.HORIZONTAL);
     layout.setPadding(Screen.dp(20f), Screen.dp(12f), Screen.dp(20f), Screen.dp(8f));
@@ -337,7 +366,7 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
     etCountry.setHint("7");
     etCountry.setInputType(InputType.TYPE_CLASS_PHONE);
     etCountry.setFilters(new InputFilter[] { new InputFilter.LengthFilter(3) });
-    etCountry.setText(FomagramSettings.getFakePhoneCountry());
+    etCountry.setText(FomagramSettings.getFakePhoneCountry(userId));
     LinearLayout.LayoutParams lpCountry = new LinearLayout.LayoutParams(Screen.dp(60f), ViewGroup.LayoutParams.WRAP_CONTENT);
     lpCountry.setMargins(0, 0, Screen.dp(10f), 0);
     layout.addView(etCountry, lpCountry);
@@ -346,7 +375,7 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
     etNumber.setHint("9991234567");
     etNumber.setInputType(InputType.TYPE_CLASS_PHONE);
     etNumber.setFilters(new InputFilter[] { new InputFilter.LengthFilter(12) });
-    etNumber.setText(FomagramSettings.getFakePhoneNumber());
+    etNumber.setText(FomagramSettings.getFakePhoneNumber(userId));
     LinearLayout.LayoutParams lpNumber = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f);
     layout.addView(etNumber, lpNumber);
 
@@ -361,12 +390,12 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
         UI.showToast("Код страны: 1-3 цифр, номер: 5-12 цифр", Toast.LENGTH_SHORT);
         return;
       }
-      FomagramSettings.setFakePhone(country, number);
+      FomagramSettings.setFakePhone(userId, country, number);
       adapter.updateValuedSettingById(R.id.btn_fomagram_phone_fake);
       showRestartBanner();
     });
     b.setNeutralButton("Сбросить", (dialog, which) -> {
-      FomagramSettings.clearFakePhone();
+      FomagramSettings.clearFakePhone(userId);
       adapter.updateValuedSettingById(R.id.btn_fomagram_phone_fake);
       showRestartBanner();
     });
@@ -375,6 +404,7 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
   }
 
   private void showFakeUsernameDialog () {
+    long userId = tdlib.myUserId();
     LinearLayout layout = new LinearLayout(context);
     layout.setOrientation(LinearLayout.VERTICAL);
     layout.setPadding(Screen.dp(20f), Screen.dp(12f), Screen.dp(20f), Screen.dp(8f));
@@ -382,7 +412,7 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
     EditText etUsername = new EditText(context);
     etUsername.setHint("fomchik_bot");
     etUsername.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-    etUsername.setText(FomagramSettings.getFakeUsername());
+    etUsername.setText(FomagramSettings.getFakeUsername(userId));
     layout.addView(etUsername, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
     AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
@@ -394,12 +424,15 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
       if (nick.startsWith("@")) {
         nick = nick.substring(1);
       }
-      FomagramSettings.setFakeUsername(nick);
+      FomagramSettings.setFakeUsername(userId, nick);
       adapter.updateValuedSettingById(R.id.btn_fomagram_username_fake);
       showRestartBanner();
     });
     b.setNeutralButton("Сбросить", (dialog, which) -> {
-      FomagramSettings.clearFakeUsername();
+      FomagramSettings.clearFakeUsername(userId);
+      adapter.updateValuedSettingById(R.id.btn_fomagram_username_fake);
+      showRestartBanner();
+    });
       adapter.updateValuedSettingById(R.id.btn_fomagram_username_fake);
       showRestartBanner();
     });

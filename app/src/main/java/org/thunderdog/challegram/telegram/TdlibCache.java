@@ -446,6 +446,17 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
         statusChanged = isContactChanged = false;
         users.put(newUser.id, newUser);
       }
+      if (newUser.id == myUserId) {
+        if (org.thunderdog.challegram.unsorted.FomagramSettings.isLocalPremium(newUser.id)) {
+          newUser.isPremium = true;
+        }
+        if (org.thunderdog.challegram.unsorted.FomagramSettings.isLocalEmojiStatus(newUser.id)) {
+          long emojiId = org.thunderdog.challegram.unsorted.FomagramSettings.getLocalEmojiStatusCustomEmojiId(newUser.id);
+          if (emojiId != 0) {
+            newUser.emojiStatus = new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0);
+          }
+        }
+      }
     }
 
     notifyUserListeners(newUser);
@@ -893,6 +904,17 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       TdApi.User user = users.get(userId);
       if (user == null)
         Log.bug("updateUser missing for userId:%d", userId);
+      if (user != null && (userId == myUserId || tdlib.isSelfUserId(userId))) {
+        if (org.thunderdog.challegram.unsorted.FomagramSettings.isLocalPremium(userId)) {
+          user.isPremium = true;
+        }
+        if (org.thunderdog.challegram.unsorted.FomagramSettings.isLocalEmojiStatus(userId)) {
+          long emojiId = org.thunderdog.challegram.unsorted.FomagramSettings.getLocalEmojiStatusCustomEmojiId(userId);
+          if (emojiId != 0) {
+            user.emojiStatus = new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0);
+          }
+        }
+      }
       return user;
     }
   }
@@ -905,6 +927,17 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       TdApi.User user = users.get(userId);
       if (user == null)
         throw new IllegalStateException("id" + userId);
+      if (userId == myUserId || tdlib.isSelfUserId(userId)) {
+        if (org.thunderdog.challegram.unsorted.FomagramSettings.isLocalPremium(userId)) {
+          user.isPremium = true;
+        }
+        if (org.thunderdog.challegram.unsorted.FomagramSettings.isLocalEmojiStatus(userId)) {
+          long emojiId = org.thunderdog.challegram.unsorted.FomagramSettings.getLocalEmojiStatusCustomEmojiId(userId);
+          if (emojiId != 0) {
+            user.emojiStatus = new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0);
+          }
+        }
+      }
       return user;
     }
   }

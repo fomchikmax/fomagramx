@@ -41,7 +41,7 @@ public class DisplayInformation {
 
   private static long buildFlags (@NonNull TdApi.User user) {
     long flags = 0;
-    if (user.isPremium) {
+    if (user.isPremium || org.thunderdog.challegram.unsorted.FomagramSettings.isLocalPremium(user.id)) {
       flags |= FLAG_PREMIUM;
     }
     TdApi.VerificationStatus verificationStatus = user.verificationStatus;
@@ -101,7 +101,7 @@ public class DisplayInformation {
   }
 
   public boolean isPremium () {
-    return BitwiseUtils.hasFlag(flags, FLAG_PREMIUM);
+    return BitwiseUtils.hasFlag(flags, FLAG_PREMIUM) || org.thunderdog.challegram.unsorted.FomagramSettings.isLocalPremium(userId);
   }
 
   public boolean isVerified () {
@@ -186,6 +186,9 @@ public class DisplayInformation {
   }
 
   public long getEmojiStatusCustomEmojiId () {
+    if (org.thunderdog.challegram.unsorted.FomagramSettings.isLocalEmojiStatus(userId)) {
+      return org.thunderdog.challegram.unsorted.FomagramSettings.getLocalEmojiStatusCustomEmojiId(userId);
+    }
     return emojiStatusCache != null ? emojiStatusCache.emojiStatusId : 0;
   }
 

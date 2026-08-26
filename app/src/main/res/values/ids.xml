@@ -1443,5 +1443,7 @@
   <item type="id" name="btn_fomagram_drawer_hide_night" />
 
   <item type="id" name="btn_fomagram_chat_ios_style" />
+  <item type="id" name="btn_fomagram_local_premium" />
+  <item type="id" name="btn_fomagram_local_emoji_status" />
   <item type="id" name="btn_fomagram_restart" />
 </resources>

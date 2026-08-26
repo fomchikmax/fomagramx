@@ -1389,7 +1389,16 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     final long emojiId = sticker.getCustomEmojiId();
     final int viewId = v.getId();
     if (viewId == R.id.btn_setEmojiStatus) {
-      tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0)), tdlib.okHandler());
+      if (org.thunderdog.challegram.unsorted.FomagramSettings.isLocalEmojiStatus(tdlib.myUserId())) {
+        org.thunderdog.challegram.unsorted.FomagramSettings.setLocalEmojiStatusCustomEmojiId(tdlib.myUserId(), emojiId);
+        TdApi.User myUser = tdlib.cache().myUser();
+        if (myUser != null) {
+          myUser.emojiStatus = new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0);
+          tdlib.cache().onUpdateUser(new TdApi.UpdateUser(myUser));
+        }
+      } else {
+        tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0)), tdlib.okHandler());
+      }
       stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, 0);
       stickerSmallView.closePreviewIfNeeded();
     } else if (viewId == R.id.btn_setEmojiStatusTimed) {
@@ -1429,7 +1438,16 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
             context.showDateTimePicker(tdlib, Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
               long expirationDate = millis / 1000L;
               stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
-              tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.okHandler());
+              if (org.thunderdog.challegram.unsorted.FomagramSettings.isLocalEmojiStatus(tdlib.myUserId())) {
+                org.thunderdog.challegram.unsorted.FomagramSettings.setLocalEmojiStatusCustomEmojiId(tdlib.myUserId(), emojiId);
+                TdApi.User myUser = tdlib.cache().myUser();
+                if (myUser != null) {
+                  myUser.emojiStatus = new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate);
+                  tdlib.cache().onUpdateUser(new TdApi.UpdateUser(myUser));
+                }
+              } else {
+                tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.okHandler());
+              }
               stickerSmallView.closePreviewIfNeeded();
             }, null);
             return true;
@@ -1449,7 +1467,16 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
           }
           long expirationDate = System.currentTimeMillis() / 1000L + duration;
           stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
-          tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.okHandler());
+          if (org.thunderdog.challegram.unsorted.FomagramSettings.isLocalEmojiStatus(tdlib.myUserId())) {
+            org.thunderdog.challegram.unsorted.FomagramSettings.setLocalEmojiStatusCustomEmojiId(tdlib.myUserId(), emojiId);
+            TdApi.User myUser = tdlib.cache().myUser();
+            if (myUser != null) {
+              myUser.emojiStatus = new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate);
+              tdlib.cache().onUpdateUser(new TdApi.UpdateUser(myUser));
+            }
+          } else {
+            tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.okHandler());
+          }
           stickerSmallView.closePreviewIfNeeded();
           return true;
         });

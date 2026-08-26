@@ -2512,6 +2512,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean hasPremium () {
+    if (FomagramSettings.isLocalPremium(myUserId())) {
+      return true;
+    }
     TdApi.User user = cache().myUser();
     if (user != null) {
       return user.isPremium;

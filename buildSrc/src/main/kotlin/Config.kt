@@ -163,7 +163,7 @@ object Sdk {
     Pair(LOLLIPOP, SdkVariant(
       flavor = "lollipop",
       minSdk = 21,
-      maxSdk = 22
+      maxSdk = null
     )),
     Pair(LATEST, SdkVariant(
       flavor = "latest",

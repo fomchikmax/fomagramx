@@ -433,9 +433,6 @@ public class SettingsFomagramController extends RecyclerViewController<Void> imp
       adapter.updateValuedSettingById(R.id.btn_fomagram_username_fake);
       showRestartBanner();
     });
-      adapter.updateValuedSettingById(R.id.btn_fomagram_username_fake);
-      showRestartBanner();
-    });
     b.setNegativeButton(R.string.Cancel, null);
     showAlert(b);
   }
